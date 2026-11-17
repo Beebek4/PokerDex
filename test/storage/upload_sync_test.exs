@@ -53,7 +53,7 @@ defmodule ZoonkWeb.UploadSyncTests do
 
       assert user.avatar == nil
 
-      assert has_element?(lv, ~s|li[aria-current=page] a:fl-icontains("settings")|)
+      assert has_element?(lv, ~s|li[aria-current=page] a:fl-icontains("profile")|)
       assert has_element?(lv, ~s|li[aria-current=page] a:fl-icontains("avatar")|)
       assert_file_upload(lv, "user_avatar")
 
@@ -103,7 +103,6 @@ defmodule ZoonkWeb.UploadSyncTests do
 
       {:ok, lv, _html} = live(conn, ~p"/dashboard/c/#{course.slug}/edit/cover")
 
-      assert has_element?(lv, ~s|li[aria-current="page"] a:fl-icontains("manage courses")|)
       assert has_element?(lv, ~s|li[aria-current="page"] a:fl-icontains("cover")|)
       assert_file_upload(lv, "course_cover")
 

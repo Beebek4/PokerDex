@@ -39,7 +39,7 @@ defmodule ZoonkWeb.LessonCompletedLiveTest do
       assert has_element?(lv, ~s|img[src="/images/lessons/good.svg"]|)
       assert has_element?(lv, ~s|p:fl-icontains("You got 7 out of 10 answers right.")|)
       assert has_element?(lv, ~s|span:fl-icontains("7.0")|)
-      assert has_element?(lv, ~s|a[href="/c/#{course.slug}"]:fl-icontains("back to the course")|)
+      assert has_element?(lv, ~s|a[href="/home"]:fl-icontains("back to home")|)
     end
 
     test "plays sound effects when enabled", %{conn: conn, course: course, user: user} do

@@ -4,10 +4,13 @@ defmodule ZoonkWeb.UserSettingsLiveTest do
   import Mox
   import Phoenix.LiveViewTest
   import Zoonk.Fixtures.Accounts
+  import Zoonk.Fixtures.Content
   import Zoonk.Fixtures.Organizations
 
   alias Zoonk.Accounts
-  alias Zoonk.Organizations
+  alias Zoonk.Content
+  alias Zoonk.Content.UserSelection
+  alias Zoonk.Repo
 
   @form "#settings-form"
 
@@ -32,7 +35,7 @@ defmodule ZoonkWeb.UserSettingsLiveTest do
 
       {:ok, lv, _html} = live(conn, ~p"/users/settings")
 
-      assert has_element?(lv, ~s|li[aria-current=page] a:fl-icontains("settings")|)
+      assert has_element?(lv, ~s|li[aria-current=page] a:fl-icontains("profile")|)
       assert has_element?(lv, ~s|li[aria-current=page] a:fl-icontains("profile")|)
 
       assert has_element?(lv, ~s|input[name="user[username]"][value="#{user.username}"]|)
@@ -59,7 +62,7 @@ defmodule ZoonkWeb.UserSettingsLiveTest do
     test "updates the user language", %{conn: conn, user: user} do
       {:ok, lv, _html} = live(conn, ~p"/users/settings")
 
-      assert has_element?(lv, ~s|li[aria-current=page] a:fl-icontains("settings")|)
+      assert has_element?(lv, ~s|li[aria-current=page] a:fl-icontains("profile")|)
       assert has_element?(lv, ~s|li[aria-current="page"] a:fl-icontains("profile")|)
 
       assert has_element?(lv, ~s|option[value="en"][selected]|)
@@ -83,7 +86,7 @@ defmodule ZoonkWeb.UserSettingsLiveTest do
     test "updates the user name", %{conn: conn, user: user} do
       {:ok, lv, _html} = live(conn, ~p"/users/settings")
 
-      assert has_element?(lv, ~s|li[aria-current=page] a:fl-icontains("settings")|)
+      assert has_element?(lv, ~s|li[aria-current=page] a:fl-icontains("profile")|)
       assert has_element?(lv, ~s|li[aria-current=page] a:fl-icontains("profile")|)
 
       new_first_name = "New first name"
@@ -139,7 +142,7 @@ defmodule ZoonkWeb.UserSettingsLiveTest do
 
       {:ok, lv, _html} = live(conn, ~p"/users/settings/email")
 
-      assert has_element?(lv, ~s|li[aria-current=page] a:fl-icontains("settings")|)
+      assert has_element?(lv, ~s|li[aria-current=page] a:fl-icontains("profile")|)
       assert has_element?(lv, ~s|li[aria-current=page] a:fl-icontains("email")|)
 
       result =
@@ -177,12 +180,17 @@ defmodule ZoonkWeb.UserSettingsLiveTest do
   describe "/users/setting/email (guest user)" do
     setup :set_school_with_guest_user
 
-    test "converts a guest account into a real account", %{conn: conn} do
+    test "converts a guest account without losing its saved answers", %{conn: conn, user: user} do
       attrs = valid_user_attributes()
+      course = course_fixture()
+      lesson = lesson_fixture(%{course_id: course.id})
+      step = lesson_step_fixture(%{lesson_id: lesson.id})
+      option = step_option_fixture(%{lesson_step_id: step.id})
+      {:ok, selection} = Content.add_user_selection(%{user_id: user.id, lesson_id: lesson.id, step_id: step.id, option_id: option.id, duration: 7, correct: 0, total: 1})
 
       {:ok, lv, _html} = live(conn, ~p"/users/settings")
 
-      refute has_element?(lv, "li", "Profile")
+      assert has_element?(lv, "li", "Profile")
       refute has_element?(lv, "li", "Avatar")
       refute has_element?(lv, "li", "Email")
       refute has_element?(lv, "li", "Password")
@@ -195,6 +203,8 @@ defmodule ZoonkWeb.UserSettingsLiveTest do
         |> render_submit()
 
       assert result =~ "A link to confirm your email"
+      assert Accounts.get_user!(user.id).id == user.id
+      assert Repo.get!(UserSelection, selection.id).user_id == user.id
     end
   end
 
@@ -206,7 +216,7 @@ defmodule ZoonkWeb.UserSettingsLiveTest do
 
       {:ok, lv, _html} = live(conn, ~p"/users/settings/password")
 
-      assert has_element?(lv, ~s|li[aria-current=page] a:fl-icontains("settings")|)
+      assert has_element?(lv, ~s|li[aria-current=page] a:fl-icontains("profile")|)
       assert has_element?(lv, ~s|li[aria-current=page] a:fl-icontains("password")|)
 
       form =
@@ -253,43 +263,17 @@ defmodule ZoonkWeb.UserSettingsLiveTest do
   describe "settings" do
     setup :app_setup
 
-    test "displays the analytics tag", %{conn: conn, school: school} do
+    test "does not load third-party analytics for the app or child schools", %{conn: conn, school: school, user: user} do
       {:ok, _lv, html} = live(conn, "/users/settings")
 
-      assert html =~ "src=\"https://plausible.io/js/script.js\""
-      assert html =~ "data-domain=\"#{school.custom_domain}\""
-    end
-
-    test "hides the analytics tag if the user has disabled it", %{conn: conn, school: school, user: user} do
-      school_user = Organizations.get_school_user(school.slug, user.username)
-      Organizations.update_school_user(school_user.id, %{analytics?: false})
-
-      {:ok, _lv, html} = live(conn, "/users/settings")
-
-      refute html =~ "src=\"https://plausible.io/js/script.js\""
-      refute html =~ "data-domain=\"#{school.custom_domain}\""
-    end
-
-    test "displays the analytics tag from the parent school when visiting a child school", %{conn: conn, school: school, user: user} do
       child_school = school_fixture(%{school_id: school.id})
-      school_user_fixture(%{school: child_school, user: user, analytics?: true})
-      conn = Map.put(conn, :host, "#{child_school.slug}.#{school.custom_domain}")
+      school_user_fixture(%{school: child_school, user: user})
+      child_conn = Map.put(conn, :host, "#{child_school.slug}.#{school.custom_domain}")
 
-      {:ok, _lv, html} = live(conn, "/users/settings")
+      {:ok, _lv, child_html} = live(child_conn, "/users/settings")
 
-      assert html =~ "src=\"https://plausible.io/js/script.js\""
-      assert html =~ "data-domain=\"#{school.custom_domain}\""
-    end
-
-    test "displays the analytics tag from the parent school when visiting a child school using a custom domain", %{conn: conn, school: school, user: user} do
-      child_school = school_fixture(%{school_id: school.id})
-      school_user_fixture(%{school: child_school, user: user, analytics?: true})
-      conn = Map.put(conn, :host, child_school.custom_domain)
-
-      {:ok, _lv, html} = live(conn, "/users/settings")
-
-      assert html =~ "src=\"https://plausible.io/js/script.js\""
-      assert html =~ "data-domain=\"#{school.custom_domain}\""
+      refute html =~ "plausible.io"
+      refute child_html =~ "plausible.io"
     end
   end
 
@@ -299,7 +283,7 @@ defmodule ZoonkWeb.UserSettingsLiveTest do
     test "deletes the user account", %{conn: conn, user: user} do
       {:ok, lv, _html} = live(conn, ~p"/users/settings/delete")
 
-      assert has_element?(lv, "li[aria-current=page]", "Settings")
+      assert has_element?(lv, "li[aria-current=page]", "Profile")
       assert has_element?(lv, "li[aria-current=page]", "Delete")
 
       lv

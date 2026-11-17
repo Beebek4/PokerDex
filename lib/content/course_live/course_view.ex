@@ -13,6 +13,18 @@ defmodule ZoonkWeb.Live.CourseView do
     lessons = Content.list_published_lessons(course, user)
     student_count = Content.get_course_users_count(course, :student)
 
+    resume_lesson =
+      Enum.find(lessons, fn lesson ->
+        not CourseUtils.lesson_completed?(user, lesson.user_lessons) and
+          Content.get_lesson_resume_order(user.id, lesson.id) > 0
+      end)
+
+    next_lesson =
+      resume_lesson ||
+        Enum.find(lessons, fn lesson -> not CourseUtils.lesson_completed?(user, lesson.user_lessons) end)
+
+    next_lesson = if lesson_locked?(course, socket.assigns.course_user), do: nil, else: next_lesson
+
     socket =
       socket
       |> assign(:page_title, course.name)
@@ -20,6 +32,8 @@ defmodule ZoonkWeb.Live.CourseView do
       |> assign(:og_image, course.cover)
       |> assign(:student_count, student_count)
       |> assign(:lessons, lessons)
+      |> assign(:next_lesson, next_lesson)
+      |> assign(:resume_lesson?, not is_nil(resume_lesson) and not is_nil(next_lesson))
 
     {:ok, socket}
   end

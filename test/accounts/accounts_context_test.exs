@@ -143,6 +143,16 @@ defmodule Zoonk.AccountsTest do
     test "creates a guest user" do
       assert {:ok, %User{guest?: true}} = Accounts.create_guest_user()
     end
+
+    test "stores optional onboarding preferences on a guest account" do
+      assert {:ok, %User{guest?: true, experience_level: "casual", learning_goal: "better_decisions"}} =
+               Accounts.create_guest_user(%{"experience_level" => "casual", "learning_goal" => "better_decisions"})
+    end
+
+    test "rejects unsupported experience levels" do
+      assert {:error, changeset} = Accounts.create_guest_user(%{"experience_level" => "expert"})
+      assert "is invalid" in errors_on(changeset).experience_level
+    end
   end
 
   describe "change_user_registration/2" do

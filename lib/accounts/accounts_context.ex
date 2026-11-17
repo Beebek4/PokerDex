@@ -195,15 +195,25 @@ defmodule Zoonk.Accounts do
       iex> create_guest_user()
       {:ok, %User{}}
   """
-  @spec create_guest_user() :: user_changeset()
-  def create_guest_user do
+  @spec create_guest_user(map()) :: user_changeset()
+  def create_guest_user(attrs \\ %{}) do
     timestamp = System.os_time(:millisecond)
     str = 3 |> :crypto.strong_rand_bytes() |> Base.url_encode64()
     username = "#{str}_#{timestamp}"
     email = "#{username}@example.com"
     password = Utilities.generate_password()
 
-    %User{} |> User.registration_changeset(%{email: email, password: password, username: username, guest?: true}) |> Repo.insert()
+    attrs =
+      %{
+        experience_level: Map.get(attrs, :experience_level) || Map.get(attrs, "experience_level"),
+        learning_goal: Map.get(attrs, :learning_goal) || Map.get(attrs, "learning_goal")
+      }
+      |> Enum.reject(fn {_key, value} -> is_nil(value) end)
+      |> Map.new()
+
+    attrs = Map.merge(attrs, %{email: email, password: password, username: username, guest?: true})
+
+    %User{} |> User.registration_changeset(attrs) |> Repo.insert()
   end
 
   @doc """

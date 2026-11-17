@@ -9,7 +9,6 @@ defmodule ZoonkWeb.Layouts do
   import ZoonkWeb.Layouts.MenuUtils
 
   alias Zoonk.Organizations.School
-  alias Zoonk.Organizations.SchoolUser
   alias ZoonkWeb.Components.Layouts.CourseSelect
   alias ZoonkWeb.Components.Layouts.LessonSelect
 
@@ -22,12 +21,4 @@ defmodule ZoonkWeb.Layouts do
   @spec page_title(String.t() | nil, School.t() | nil) :: String.t()
   def page_title(nil, school), do: school_name(school)
   def page_title(title, _school), do: title
-
-  @spec plausible_domain(School.t()) :: String.t() | nil
-  def plausible_domain(%School{} = app), do: app.custom_domain
-  def plausible_domain(_school), do: nil
-
-  @spec enable_plausible?(SchoolUser.t() | nil) :: boolean()
-  def enable_plausible?(%SchoolUser{} = school_user), do: school_user.analytics?
-  def enable_plausible?(nil), do: true
 end

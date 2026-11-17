@@ -30,10 +30,6 @@
   </div>
 
   <div :if={@school_user.approved?} class="flex w-full gap-x-4 sm:w-auto">
-    <.button :if={is_nil(@school.school_id)} icon="tabler-graph" color={if @school_user.analytics?, do: :alert_light, else: :success_light} phx-click="toggle-analytics">
-      <%= if @school_user.analytics?, do: dgettext("orgs", "Disable analytics"), else: dgettext("orgs", "Enable analytics") %>
-    </.button>
-
     <.button
       icon="tabler-trash-x"
       data-confirm={

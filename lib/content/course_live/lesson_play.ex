@@ -9,22 +9,36 @@ defmodule ZoonkWeb.Live.LessonPlay do
   alias Zoonk.Content
   alias Zoonk.Content.Lesson
   alias Zoonk.Content.LessonStep
+  alias Zoonk.Content.PokerScenario
   alias Zoonk.Content.StepOption
   alias Zoonk.Storage
 
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
-    %{lesson: %Lesson{} = lesson} = socket.assigns
+    %{lesson: %Lesson{} = lesson, current_user: user} = socket.assigns
 
     step_count = Content.count_lesson_steps(lesson.id)
-    current_step = Content.get_next_step(lesson, 0)
+    pending_selection = Content.get_pending_lesson_selection(user.id, lesson.id)
+
+    {current_step, selected_option, saved_selection?} =
+      case pending_selection do
+        %{step: step, option: option} ->
+          step = %{step | poker_scenario: pending_selection.scenario_snapshot || step.poker_scenario}
+          {step, option, true}
+
+        nil ->
+          resume_order = Content.get_lesson_resume_order(user.id, lesson.id)
+          {Content.get_next_step(lesson, resume_order), nil, false}
+      end
 
     socket =
       socket
       |> assign(:page_title, lesson.name)
       |> assign(:step_count, step_count)
       |> assign(:current_step, current_step)
-      |> assign(:selected_option, nil)
+      |> assign(:selected_option, selected_option)
+      |> assign(:saved_selection, pending_selection)
+      |> assign(:selection_saved?, saved_selection?)
       |> assign(:options, shuffle_options(current_step))
       |> assign(:lesson_start, DateTime.utc_now())
       |> assign(:step_start, DateTime.utc_now())
@@ -33,41 +47,59 @@ defmodule ZoonkWeb.Live.LessonPlay do
   end
 
   @impl Phoenix.LiveView
-  def handle_event("next", %{"selected_option" => selected_option}, socket) when is_nil(socket.assigns.selected_option) do
+  def handle_event("next", %{"step_id" => step_id} = params, socket) do
+    case {socket.assigns.current_step, Integer.parse(step_id)} do
+      {%{id: current_step_id}, {current_step_id, ""}} -> handle_next(params, socket)
+      _stale_or_completed -> {:noreply, socket}
+    end
+  end
+
+  def handle_event("next", _params, socket), do: {:noreply, socket}
+
+  defp handle_next(%{"selected_option" => selected_option}, socket) when is_nil(socket.assigns.selected_option) do
     %{current_step: step} = socket.assigns
 
     option_id = String.to_integer(selected_option)
     selected_option = get_option(step.options, option_id)
 
-    socket =
-      socket
-      |> maybe_play_sound_effect(selected_option.correct?)
-      |> assign(:selected_option, selected_option)
+    case selected_option && Content.add_user_selection(selection_attrs(socket, %{}, selected_option)) do
+      {:ok, selection} ->
+        socket =
+          socket
+          |> maybe_play_sound_effect(selected_option.correct?)
+          |> assign(:selected_option, selected_option)
+          |> assign(:saved_selection, selection)
+          |> assign(:selection_saved?, true)
 
-    {:noreply, socket}
+        {:noreply, socket}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, dgettext("courses", "Unable to send answer"))}
+
+      nil ->
+        {:noreply, put_flash(socket, :error, dgettext("courses", "Choose one of the available answers."))}
+    end
   end
 
-  def handle_event("next", params, socket) do
-    %{current_user: user, lesson: lesson, current_step: current_step, step_start: step_start, selected_option: selected_option} = socket.assigns
+  defp handle_next(params, socket) do
+    %{lesson: lesson, current_step: current_step, step_start: step_start, selected_option: selected_option} = socket.assigns
     step_duration = DateTime.diff(DateTime.utc_now(), step_start, :second)
     next_step = Content.get_next_step(lesson, current_step.order)
 
-    attrs = %{
-      user_id: user.id,
-      correct: get_correct_value(selected_option),
-      total: 1,
-      lesson_id: lesson.id,
-      step_id: current_step.id,
-      option_id: get_selected_option_id(selected_option),
-      answer: [params["answer"]],
-      duration: step_duration
-    }
+    save_result =
+      if socket.assigns.selection_saved? do
+        Content.acknowledge_user_selection(socket.assigns.saved_selection.id)
+      else
+        Content.add_user_selection(selection_attrs(socket, params, selected_option, step_duration, true))
+      end
 
-    case Content.add_user_selection(attrs) do
+    case save_result do
       {:ok, _} ->
         socket =
           socket
           |> assign(:selected_option, nil)
+          |> assign(:saved_selection, nil)
+          |> assign(:selection_saved?, false)
           |> assign(:current_step, next_step)
           |> assign(:options, shuffle_options(next_step))
           |> handle_lesson_completed(next_step)
@@ -96,6 +128,38 @@ defmodule ZoonkWeb.Live.LessonPlay do
   defp handle_lesson_completed(socket, _next_step), do: assign(socket, :step_start, DateTime.utc_now())
 
   defp get_option(options, option_id), do: Enum.find(options, &(&1.id == option_id))
+
+  defp selection_attrs(socket, params, selected_option, duration \\ nil, acknowledged? \\ false) do
+    %{current_user: user, lesson: lesson, current_step: step, step_start: step_start} = socket.assigns
+    duration = duration || DateTime.diff(DateTime.utc_now(), step_start, :second)
+
+    Map.merge(
+      %{
+        user_id: user.id,
+        correct: get_correct_value(selected_option),
+        total: 1,
+        lesson_id: lesson.id,
+        step_id: step.id,
+        option_id: get_selected_option_id(selected_option),
+        answer: [params["answer"]],
+        duration: duration,
+        acknowledged?: acknowledged?
+      },
+      scenario_attempt_attrs(step, selected_option)
+    )
+  end
+
+  defp scenario_attempt_attrs(%LessonStep{poker_scenario: scenario}, %StepOption{score: score}) when is_map(scenario) and is_integer(score) do
+    case PokerScenario.version(scenario) do
+      version when is_integer(version) ->
+        %{score: score, scenario_version: version, scenario_snapshot: scenario}
+
+      _invalid_version ->
+        %{}
+    end
+  end
+
+  defp scenario_attempt_attrs(_step, _selected_option), do: %{}
 
   defp get_selected_option_id(nil), do: nil
   defp get_selected_option_id(selected_option), do: selected_option.id

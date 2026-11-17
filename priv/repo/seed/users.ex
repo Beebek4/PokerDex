@@ -3,124 +3,28 @@ defmodule UserSeed do
 
   alias Zoonk.Accounts
 
-  @users [
-    %{
-      first_name: "Albert",
-      last_name: "Einstein",
-      email: "einstein@example.com",
-      username: "einstein",
-      date_of_birth: "1979-03-14",
-      language: :en,
-      password: "Demo1234",
-      avatar: nil
-    },
-    %{
-      first_name: "Marie",
-      last_name: "Curie",
-      email: "curie@example.com",
-      username: "curie",
-      date_of_birth: "1967-11-07",
-      language: :en,
-      password: "Demo1234",
-      avatar: nil
-    },
-    %{
-      first_name: "Isaac",
-      last_name: "Newton",
-      email: "newton@example.com",
-      username: "newton",
-      date_of_birth: "1943-01-04",
-      language: :en,
-      password: "Demo1234",
-      avatar: nil
-    },
-    %{
-      first_name: "Ada",
-      last_name: "Lovelace",
-      email: "lovelace@example.com",
-      username: "lovelace",
-      date_of_birth: "1915-12-10",
-      language: :en,
-      password: "Demo1234",
-      avatar: nil
-    },
-    %{
-      first_name: "Nikola",
-      last_name: "Tesla",
-      email: "tesla@example.com",
-      username: "tesla",
-      date_of_birth: "1956-07-10",
-      language: :en,
-      password: "Demo1234",
-      avatar: nil
-    },
-    %{
-      first_name: "Rosie",
-      last_name: "Franklin",
-      email: "franklin@example.com",
-      username: "franklin",
-      date_of_birth: "1970-07-25",
-      language: :en,
-      password: "Demo1234",
-      avatar: nil
-    },
-    %{
-      first_name: "Louis",
-      last_name: "Pasteur",
-      email: "pasteur@example.com",
-      username: "pasteur",
-      date_of_birth: "1992-12-27",
-      language: :en,
-      password: "Demo1234",
-      avatar: nil
-    },
-    %{
-      first_name: "Leonardo",
-      last_name: "da Vinci",
-      email: "davinci@example.com",
-      username: "davinci",
-      date_of_birth: "1952-04-15",
-      language: :en,
-      password: "Demo1234",
-      avatar: nil
-    },
-    %{
-      first_name: "Jane",
-      last_name: "Goodall",
-      email: "goodall@example.com",
-      username: "goodall",
-      date_of_birth: "1984-04-03",
-      language: :en,
-      password: "Demo1234",
-      avatar: nil
-    }
-  ]
+  @admin %{
+    first_name: "PokerDex",
+    last_name: "Admin",
+    email: "admin@pokerdex.example",
+    username: "pokerdex-admin",
+    language: :en,
+    password: "Demo1234"
+  }
 
-  @doc """
-  Inserts the users into the database.
+  @doc "Creates the local PokerDex manager account if it does not already exist."
+  def seed do
+    user_exists? =
+      Accounts.get_user_by_email(@admin.email) || Accounts.get_user_by_username(@admin.username)
 
-  Iterate over the users list and insert each user into the database.
-  """
-  def seed(args \\ %{}) do
-    multiple? = Map.get(args, :multiple?, false)
-    users = generate_user_attrs(multiple?)
-    Enum.each(users, &Accounts.register_user/1)
-  end
+    if is_nil(user_exists?) do
+      case Accounts.register_user(@admin) do
+        {:ok, _user} ->
+          :ok
 
-  defp generate_user_attrs(false), do: @users
-  defp generate_user_attrs(true), do: generate_user_attrs()
-
-  defp generate_user_attrs() do
-    random_users =
-      Enum.map(1..200, fn idx ->
-        %{
-          email: "user_#{idx}@example.com",
-          username: "user_#{idx}",
-          language: :en,
-          password: "Demo1234"
-        }
-      end)
-
-    @users ++ random_users
+        {:error, changeset} ->
+          raise "Could not seed PokerDex manager: #{inspect(changeset.errors)}"
+      end
+    end
   end
 end

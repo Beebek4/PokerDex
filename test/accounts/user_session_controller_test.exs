@@ -18,7 +18,7 @@ defmodule ZoonkWeb.UserSessionControllerTest do
 
       # Now do a logged in request and assert on the menu
       response = html_response(get(conn, ~p"/courses"), 200)
-      assert response =~ "Settings"
+      assert response =~ "Profile"
     end
 
     test "logs the user in with remember me", %{conn: conn, user: user} do

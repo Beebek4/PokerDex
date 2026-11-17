@@ -3,107 +3,55 @@ defmodule SchoolSeed do
 
   alias Zoonk.Accounts
   alias Zoonk.Organizations
+  alias Zoonk.Organizations.School
+  alias Zoonk.Organizations.SchoolUser
+  alias Zoonk.Repo
 
   @app %{
-    name: "Zoonk",
+    name: "PokerDex",
     custom_domain: "zoonk.test",
-    email: "noreply@zoonk.org",
+    email: "noreply@pokerdex.example",
     public?: true,
+    allow_guests?: true,
     slug: "zoonk",
-    managers: ["einstein"],
-    teachers: ["curie"],
-    students: ["newton"]
+    manager: "pokerdex-admin"
   }
 
-  @schools [
-    %{
-      name: "Apple",
-      custom_domain: "apple.test",
-      email: "noreply@example.com",
-      public?: true,
-      slug: "apple",
-      managers: ["lovelace"],
-      teachers: ["tesla"],
-      students: ["franklin"]
-    },
-    %{
-      name: "Google",
-      custom_domain: nil,
-      email: "noreply@example.com",
-      public?: false,
-      slug: "google",
-      managers: ["pasteur"],
-      teachers: ["davinci"],
-      students: ["goodall"]
-    }
-  ]
+  @doc "Creates the local PokerDex school and its manager membership if they are missing."
+  def seed do
+    manager = Accounts.get_user_by_username(@app.manager)
+    attrs = Map.merge(Map.delete(@app, :manager), %{created_by_id: manager.id})
 
-  @doc """
-  Seeds the database with schools.
-  """
-  def seed(args \\ %{}) do
-    multiple? = Map.get(args, :multiple?, false)
-    app = create_app()
-    schools = generate_school_attrs(multiple?)
-    Enum.each(schools, fn attrs -> create_school(attrs, app, multiple?: multiple?) end)
-  end
+    school =
+      case Repo.get_by(School, slug: @app.slug) do
+        nil ->
+          case Organizations.create_school(attrs) do
+            {:ok, school} -> school
+            {:error, changeset} -> raise "Could not seed PokerDex: #{inspect(changeset.errors)}"
+          end
 
-  defp generate_school_attrs(false), do: @schools
-  defp generate_school_attrs(true), do: generate_school_attrs()
+        %School{allow_guests?: false} = school ->
+          case Organizations.update_school(school, %{allow_guests?: true}) do
+            {:ok, school} ->
+              school
 
-  defp generate_school_attrs() do
-    random_schools =
-      Enum.map(1..30, fn idx ->
-        %{
-          name: "School #{idx}",
-          custom_domain: nil,
-          email: "noreply@example.com",
-          public?: false,
-          slug: "school-#{idx}",
-          managers: ["lovelace"],
-          teachers: ["tesla"],
-          students: ["franklin"]
-        }
-      end)
+            {:error, changeset} ->
+              raise "Could not enable guest learning: #{inspect(changeset.errors)}"
+          end
 
-    @schools ++ random_schools
-  end
+        school ->
+          school
+      end
 
-  defp create_school(attrs, app, opts) do
-    multiple? = Keyword.get(opts, :multiple?, false)
-    manager = Accounts.get_user_by_username(Enum.at(attrs.managers, 0))
-    attrs = Map.merge(attrs, %{created_by_id: manager.id, school_id: app.id})
-    {:ok, school} = Organizations.create_school(attrs)
-    create_school_users(school, attrs)
-    create_students(school, multiple?)
-  end
+    if is_nil(Repo.get_by(SchoolUser, school_id: school.id, user_id: manager.id)) do
+      Organizations.create_school_user(school, manager, %{
+        role: :manager,
+        approved?: true,
+        approved_by_id: manager.id,
+        approved_at: DateTime.utc_now()
+      })
+    end
 
-  defp create_app() do
-    manager = Accounts.get_user_by_username(Enum.at(@app.managers, 0))
-    attrs = Map.merge(@app, %{created_by_id: manager.id})
-    {:ok, school} = Organizations.create_school(attrs)
-    create_school_users(school, attrs)
     school
-  end
-
-  defp create_school_users(school, attrs) do
-    Enum.each(attrs.managers, fn manager -> create_school_user(school, manager, :manager) end)
-    Enum.each(attrs.teachers, fn teacher -> create_school_user(school, teacher, :teacher) end)
-    Enum.each(attrs.students, fn student -> create_school_user(school, student, :student) end)
-  end
-
-  defp create_students(_school, false), do: nil
-
-  defp create_students(school, true) do
-    Enum.each(1..200, fn idx -> create_school_user(school, "user_#{idx}", :student) end)
-  end
-
-  defp create_school_user(school, username, role) do
-    user = Accounts.get_user_by_username(username)
-    Organizations.create_school_user(school, user, school_user_attrs(user, role))
-  end
-
-  defp school_user_attrs(user, role) do
-    %{role: role, approved?: true, approved_by_id: user.id, approved_at: DateTime.utc_now()}
   end
 end

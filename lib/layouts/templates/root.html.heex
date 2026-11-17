@@ -11,19 +11,15 @@
     <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
     </script>
 
-    <script :if={enable_plausible?(assigns[:school_user])} defer data-domain={plausible_domain(assigns[:app])} src="https://plausible.io/js/script.js">
-    </script>
-
     <link rel="apple-touch-icon" sizes="180x180" href={school_icon(assigns.school, assigns.app, 180)} />
-    <link rel="icon" type="image/png" sizes="32x32" href={school_icon(assigns.school, assigns.app, 32)} />
-    <link rel="icon" type="image/png" sizes="16x16" href={school_icon(assigns.school, assigns.app, 16)} />
-    <meta name="msapplication-TileColor" content="#ffc40d" />
-    <meta name="theme-color" content="#ffc40d" />
+    <link rel="icon" sizes="32x32" href={school_icon(assigns.school, assigns.app, 32)} />
+    <link rel="icon" sizes="16x16" href={school_icon(assigns.school, assigns.app, 16)} />
+    <meta name="theme-color" content="#0f172a" />
 
     <meta :if={is_nil(assigns[:page_description])} name="robots" content="noindex" />
     <meta :if={assigns[:page_description]} name="description" content={assigns[:page_description]} />
 
-    <meta property="og:type" content="school" />
+    <meta property="og:type" content="website" />
     <meta property="og:site_name" content={school_name(assigns.school)} />
     <meta property="og:title" content={page_title(assigns[:page_title], assigns[:school])} />
     <meta property="og:image" content={social_image(assigns[:og_image], assigns[:school])} />

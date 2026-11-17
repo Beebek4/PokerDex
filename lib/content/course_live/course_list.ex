@@ -14,7 +14,7 @@ defmodule ZoonkWeb.Live.CourseList do
 
     socket =
       socket
-      |> assign(:page_title, gettext("Courses"))
+      |> assign(:page_title, gettext("Theory"))
       |> stream(:courses, courses)
 
     {:ok, socket}

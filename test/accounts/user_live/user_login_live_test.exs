@@ -23,7 +23,7 @@ defmodule ZoonkWeb.UserLoginLiveTest do
 
     test "displays a default logo when the school doesn't have one", %{conn: conn} do
       {:ok, lv, _html} = live(conn, ~p"/users/login")
-      assert has_element?(lv, ~s|img[src="/favicon/180.png"]|)
+      assert has_element?(lv, ~s|img[src="/images/pokerdex_logo.png"]|)
     end
   end
 
@@ -44,7 +44,7 @@ defmodule ZoonkWeb.UserLoginLiveTest do
 
       {:ok, lv, html} = live(conn, ~p"/users/login")
 
-      assert has_element?(lv, ~s|img[src="#{file_url}"]|)
+      assert has_element?(lv, ~s|img[src="/images/pokerdex_logo.png"]|)
       assert html =~ ~s(sizes="16x16" href="#{file_url}"/>)
     end
   end

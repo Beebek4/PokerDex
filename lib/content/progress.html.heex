@@ -1,0 +1,57 @@
+<section class="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+  <p class="text-sm font-semibold uppercase tracking-wide text-cyan-800">Progress</p>
+  <h1 class="mt-2 text-3xl font-bold tracking-tight text-gray-950">Your practice so far</h1>
+  <p class="mt-2 text-gray-600"><%= @attempt_count %> scenario answers saved.</p>
+
+  <section :if={@due_reviews != []} class="mt-8 rounded-3xl border border-amber-200 bg-amber-50 p-5 sm:p-6">
+    <p class="text-sm font-semibold uppercase tracking-wide text-amber-900">Ready for another try</p>
+    <h2 class="mt-1 text-xl font-bold text-amber-950">Review a skill you missed</h2>
+    <div class="mt-4 grid gap-3 md:grid-cols-2">
+      <article :for={review <- @due_reviews} class="rounded-2xl border border-amber-200 bg-white p-4">
+        <h3 class="font-semibold text-gray-950"><%= review.skill |> String.replace(".", " ") |> String.capitalize() %></h3>
+        <p class="mt-1 text-sm text-gray-600"><%= review.reason %></p>
+        <p class="mt-1 text-sm text-gray-600">A different authored hand is ready in <%= review.lesson.name %>.</p>
+        <.link_button navigate={~p"/review/#{review.course.slug}/#{review.lesson.id}/#{review.step.id}"} color={:primary} class="mt-4">Try a new hand</.link_button>
+      </article>
+    </div>
+    <p class="mt-4 text-xs text-amber-950">Some practice scenarios are still marked draft while they await poker review.</p>
+  </section>
+
+  <div :if={@skills == []} class="mt-8 rounded-2xl border border-gray-200 bg-white p-6">
+    <h2 class="text-lg font-semibold text-gray-950">Your first practice is ready</h2>
+    <p class="mt-2 text-sm text-gray-600">Complete a lesson with a hand question and your practice summary will appear here.</p>
+    <.link_button navigate={~p"/practice"} color={:primary} class="mt-5">Choose a puzzle set</.link_button>
+  </div>
+
+  <div :if={@skills != []} class="mt-8 space-y-4">
+    <article :for={{skill, stats} <- @skills} class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+      <h2 class="font-semibold text-gray-950"><%= skill |> String.replace(".", " ") |> String.capitalize() %></h2>
+      <div class="mt-3 grid gap-3 sm:grid-cols-2">
+        <div :if={stats.action_count > 0} class="rounded-xl bg-cyan-50 p-4">
+          <p class="text-sm text-cyan-950">Action decisions</p>
+          <p class="mt-1 text-xl font-bold text-cyan-950">
+            <%= Float.round(stats.action_score / stats.action_count, 1) %><span class="text-sm font-medium"> / 100 average rubric score</span>
+          </p>
+          <p class="mt-1 text-xs text-cyan-900"><%= stats.action_count %> attempts</p>
+          <p :if={stats.action_recent != []} class="mt-1 text-xs text-cyan-900">
+            Recent <%= length(stats.action_recent) %>: <%= Float.round(Enum.sum(stats.action_recent) / length(stats.action_recent), 1) %>/100 average rubric score
+          </p>
+        </div>
+        <div :if={stats.objective_count > 0} class="rounded-xl bg-indigo-50 p-4">
+          <p class="text-sm text-indigo-950">Hand-ranking questions</p>
+          <p class="mt-1 text-xl font-bold text-indigo-950"><%= stats.objective_correct %> / <%= stats.objective_count %><span class="text-sm font-medium"> correct</span></p>
+          <p class="mt-1 text-xs text-indigo-900">Objective card calculation</p>
+          <p :if={stats.objective_recent != []} class="mt-1 text-xs text-indigo-900">
+            Recent <%= length(stats.objective_recent) %>: <%= Enum.sum(Enum.map(stats.objective_recent, &elem(&1, 0))) %> / <%= Enum.sum(
+              Enum.map(stats.objective_recent, &elem(&1, 1))
+            ) %> correct
+          </p>
+        </div>
+      </div>
+    </article>
+  </div>
+
+  <p class="mt-6 max-w-3xl text-sm leading-6 text-gray-500">
+    These are learning activity summaries. Strategy scores reflect the authored scenario assumptions and are not a validated poker rating or a promise of results.
+  </p>
+</section>

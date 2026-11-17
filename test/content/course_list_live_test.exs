@@ -38,7 +38,7 @@ defmodule ZoonkWeb.CourseListLiveTest do
       assert redirected_to(conn) == ~p"/courses"
 
       {:ok, lv, _html} = live(conn, ~p"/courses")
-      assert has_element?(lv, ~s|li[aria-current=page] a:fl-icontains("courses")|)
+      assert has_element?(lv, ~s|li[aria-current=page] a:fl-icontains("theory")|)
       refute has_element?(lv, ~s|a:fl-icontains("update your email address")|)
     end
 
@@ -161,18 +161,6 @@ defmodule ZoonkWeb.CourseListLiveTest do
       app_setup(%{conn: build_conn()})
     end
 
-    test "displays the create school menu", %{conn: conn} do
-      assert_create_school_menu(conn)
-    end
-
-    test "doesn't display the create school menu for a child school", %{conn: conn, school: school} do
-      child_school = school_fixture(%{school_id: school.id})
-      host = "#{child_school.slug}.#{school.custom_domain}"
-      conn = Map.put(conn, :host, host)
-      {:ok, lv, _html} = live(conn, ~p"/courses")
-      refute has_element?(lv, ~s|li a:fl-icontains("create school")|)
-    end
-
     test "doesn't display courses from child schools", %{conn: conn, school: school} do
       child_school = school_fixture(%{school_id: school.id})
       course = course_fixture(%{school_id: child_school.id, published?: true})
@@ -200,15 +188,10 @@ defmodule ZoonkWeb.CourseListLiveTest do
 
     {:ok, lv, _html} = live(conn, ~p"/courses")
 
-    assert has_element?(lv, ~s|li[aria-current=page] a:fl-icontains("courses")|)
+    assert has_element?(lv, ~s|li[aria-current=page] a:fl-icontains("theory")|)
 
     refute has_element?(lv, get_course_el(unpublished_course))
     refute has_element?(lv, get_course_el(private_course))
     assert has_element?(lv, get_course_el(published_course))
-  end
-
-  defp assert_create_school_menu(conn) do
-    {:ok, lv, _html} = live(conn, ~p"/courses")
-    assert has_element?(lv, ~s|li a:fl-icontains("create school")|)
   end
 end

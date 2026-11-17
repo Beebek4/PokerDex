@@ -156,7 +156,6 @@ defmodule ZoonkWeb.SchoolUpdateLiveTest do
 
       {:ok, lv, _html} = live(conn, ~p"/dashboard/edit/delete")
 
-      assert has_element?(lv, "li[aria-current=page]", "Manage school")
       assert has_element?(lv, "li[aria-current=page]", "Delete")
 
       lv
@@ -176,7 +175,6 @@ defmodule ZoonkWeb.SchoolUpdateLiveTest do
 
       {:ok, lv, _html} = live(conn, ~p"/dashboard/edit/delete")
 
-      assert has_element?(lv, "li[aria-current=page]", "Manage school")
       assert has_element?(lv, "li[aria-current=page]", "Delete")
 
       lv
