@@ -8,7 +8,7 @@ defmodule Zoonk.Content.HoldemCurriculum do
 
   @review_note "Development curriculum: strategy answers are drafts pending poker-knowledgeable review."
 
-  @doc "Returns the authored A–C curriculum fixtures."
+  @doc "Returns authored learning tracks and short, street-specific puzzle packs."
   def tracks do
     [
       %{
@@ -663,8 +663,265 @@ defmodule Zoonk.Content.HoldemCurriculum do
           )
         ]
       }
+    ] ++ street_puzzle_tracks()
+  end
+
+  defp street_puzzle_tracks do
+    [
+      puzzle_track(
+        "Preflop",
+        "holdem-puzzles-preflop",
+        "Pick a preflop spot and make a plan from your seat and the action so far.",
+        [
+          puzzle_lesson(
+            "puzzle-preflop-1",
+            "First in from the small blind",
+            action_question(
+              "puzzle-preflop-1",
+              "Folds to you in the small blind with K♣ T♣. What is a sensible first-in action?",
+              "small_blind",
+              "preflop",
+              ["Kc", "Tc"],
+              [],
+              [0, 0, 0, 0, 0.5, 1],
+              1,
+              0.5,
+              ["fold", "call", "raise"],
+              %{
+                "fold" => {30, "Folding is too tight for a suited king when action folds to you."},
+                "call" => {70, "Completing is a reasonable low-cost option, though it lets the big blind see a flop cheaply."},
+                "raise" => {100, "Raising takes the initiative with a strong suited hand and can win the blinds immediately."}
+              },
+              "Six-handed cash example, 100-big-blind effective stacks, action folds to the small blind, and there are no special reads."
+            )
+          ),
+          puzzle_lesson(
+            "puzzle-preflop-2",
+            "Defend the big blind",
+            action_question(
+              "puzzle-preflop-2",
+              "An opponent opens to 2.5 big blinds. You are in the big blind with Q♣ J♣. Choose a reasonable response.",
+              "big_blind",
+              "preflop",
+              ["Qc", "Jc"],
+              [],
+              [0.5, 2.5, 0, 0, 0, 1],
+              2.5,
+              1,
+              ["fold", "call", "raise"],
+              %{
+                "fold" => {70, "Folding can be reasonable if you prefer a tighter defense."},
+                "call" => {100, "Calling keeps a playable suited hand in at a discounted price."},
+                "raise" => {70, "A re-raise can also be used, depending on your strategy and the opener."}
+              },
+              "Six-handed cash example, 100-big-blind effective stacks, no special reads."
+            )
+          )
+        ]
+      ),
+      puzzle_track(
+        "Flop",
+        "holdem-puzzles-flop",
+        "Read the board and decide whether to check or bet on the flop.",
+        [
+          puzzle_lesson(
+            "puzzle-flop-1",
+            "Top pair on a dry flop",
+            action_question(
+              "puzzle-flop-1",
+              "You hold Q♥ J♦ on Q♠ 8♣ 3♦. The big blind checks. What is a sensible plan?",
+              "button",
+              "flop",
+              ["Qh", "Jd"],
+              ["Qs", "8c", "3d"],
+              [1, 1, 1, 1, 1, 1],
+              0,
+              0,
+              ["check", "bet"],
+              %{
+                "check" => {70, "Checking keeps the pot manageable and can protect your checking range."},
+                "bet" => {100, "A value bet can get calls from worse pairs and charge overcards."}
+              },
+              "Heads-up, relatively dry board, unknown opponent. Both actions can be reasonable by strategy and sizing."
+            )
+          ),
+          puzzle_lesson(
+            "puzzle-flop-2",
+            "Combo draw on a wet flop",
+            action_question(
+              "puzzle-flop-2",
+              "You hold 9♠ 8♠ on 7♠ 6♦ 2♠. The opponent checks. What is a reasonable aggressive option?",
+              "button",
+              "flop",
+              ["9s", "8s"],
+              ["7s", "6d", "2s"],
+              [1, 1, 1, 1, 1, 1],
+              0,
+              0,
+              ["check", "bet"],
+              %{
+                "check" => {70, "Checking preserves your equity and keeps the pot smaller."},
+                "bet" => {100, "Betting can combine fold equity with a flush draw and open-ended straight draw."}
+              },
+              "Heads-up, no bet is facing you. This combo draw can support aggression, but checking remains viable."
+            )
+          )
+        ]
+      ),
+      puzzle_track(
+        "Turn",
+        "holdem-puzzles-turn",
+        "Reassess your hand and draws after the fourth community card.",
+        [
+          puzzle_lesson(
+            "puzzle-turn-1",
+            "Top pair facing a small bet",
+            action_question(
+              "puzzle-turn-1",
+              "You hold Q♦ J♦ on Q♠ 7♣ 2♥ 4♦. The opponent bets 2 into 6. What is a reasonable response?",
+              "button",
+              "turn",
+              ["Qd", "Jd"],
+              ["Qs", "7c", "2h", "4d"],
+              [1, 1, 1, 1, 1, 1],
+              2,
+              0,
+              ["fold", "call", "raise"],
+              %{
+                "fold" => {30, "Folding top pair to a small turn bet is cautious without a strong read."},
+                "call" => {100, "Calling keeps bluffs and weaker hands in while protecting your one-pair hand from a large pot."},
+                "raise" => {30, "Raising can isolate yourself against stronger hands unless you have a clear value reason."}
+              },
+              "Heads-up, modest turn bet, unknown opponent, 100-big-blind effective stacks."
+            )
+          ),
+          puzzle_lesson(
+            "puzzle-turn-2",
+            "Open-ended draw on the turn",
+            action_question(
+              "puzzle-turn-2",
+              "You hold J♠ T♠ on Q♠ 9♣ 4♦ 2♥. The opponent checks. What can a bet accomplish?",
+              "button",
+              "turn",
+              ["Js", "Ts"],
+              ["Qs", "9c", "4d", "2h"],
+              [1, 1, 1, 1, 1, 1],
+              0,
+              0,
+              ["check", "bet"],
+              %{
+                "check" => {70, "Checking takes your free card and keeps the pot controlled."},
+                "bet" => {100, "Betting can create folds now while your open-ended straight draw can still improve."}
+              },
+              "Heads-up, Hero raised preflop, opponent checked on the turn. A semi-bluff is a choice, not a rule."
+            )
+          )
+        ]
+      ),
+      puzzle_track(
+        "River",
+        "holdem-puzzles-river",
+        "Make a final decision with the full board and no cards left to come.",
+        [
+          puzzle_lesson(
+            "puzzle-river-1",
+            "Value bet the nut flush",
+            action_question(
+              "puzzle-river-1",
+              "You hold A♦ Q♦ on K♦ 8♦ 3♦ J♣ 2♠. The opponent checks. What is a reasonable value action?",
+              "button",
+              "river",
+              ["Ad", "Qd"],
+              ["Kd", "8d", "3d", "Jc", "2s"],
+              [1, 1, 1, 1, 1, 1],
+              0,
+              0,
+              ["check", "bet"],
+              %{
+                "check" => {70, "Checking locks in showdown but may miss calls from weaker hands."},
+                "bet" => {100, "Your ace-high flush is very strong; betting can earn calls from lower flushes and other hands."}
+              },
+              "River checked to Hero; no special opponent read. Choose a size that can be called by worse hands."
+            )
+          ),
+          puzzle_lesson(
+            "puzzle-river-2",
+            "Missed draw, check or bluff?",
+            action_question(
+              "puzzle-river-2",
+              "You hold K♠ Q♠ on A♠ 8♠ 4♦ 2♥ J♦. The opponent checks. What is the cautious choice?",
+              "button",
+              "river",
+              ["Ks", "Qs"],
+              ["As", "8s", "4d", "2h", "Jd"],
+              [1, 1, 1, 1, 1, 1],
+              0,
+              0,
+              ["check", "bet"],
+              %{
+                "check" => {100, "Checking keeps your showdown value after the flush draw missed."},
+                "bet" => {70, "A bluff may fold some better hands, but it needs a credible target and line."}
+              },
+              "The spade draw missed. No read suggests the opponent will fold; checking is the low-risk option."
+            )
+          )
+        ]
+      ),
+      puzzle_track(
+        "Showdown",
+        "holdem-puzzles-showdown",
+        "Read the final board and compare the best five cards.",
+        [
+          puzzle_lesson(
+            "puzzle-showdown-1",
+            "Two pair from the board",
+            ranking_question(
+              "puzzle-showdown-1",
+              "You hold A♦ Q♣ on A♣ 8♦ 8♠ 5♥ 2♣. What is your best hand category?",
+              ["Ad", "Qc"],
+              ["Ac", "8d", "8s", "5h", "2c"],
+              :two_pair,
+              "Your ace pairs with the board ace, and the board pair of eights gives you two pair: aces and eights."
+            )
+          ),
+          puzzle_lesson(
+            "puzzle-showdown-2",
+            "Full house on a paired board",
+            ranking_question(
+              "puzzle-showdown-2",
+              "You hold K♦ 2♦ on 9♣ 9♦ 9♥ K♠ 4♣. What is your best hand category?",
+              ["Kd", "2d"],
+              ["9c", "9d", "9h", "Ks", "4c"],
+              :full_house,
+              "You use three nines from the board and a pair of kings from your hand and the board to make a full house."
+            )
+          )
+        ]
+      )
     ]
   end
+
+  defp puzzle_track(title, slug, description, lessons) do
+    %{
+      name: "#{title} puzzles",
+      slug: slug,
+      description: description,
+      level: :beginner,
+      lessons: lessons
+    }
+  end
+
+  defp puzzle_lesson(id, name, question) do
+    id
+    |> lesson(name, "Quick #{String.downcase(name)} puzzle.", "", "", [question])
+    |> Map.put(:puzzle_only?, true)
+  end
+
+  @doc "Returns the teaching-first theory curriculum, separate from the puzzle tracks."
+  def theory_tracks, do: Zoonk.Content.HoldemTheoryCurriculum.tracks()
+
+  @doc "Returns both the teaching curriculum and authored practice tracks."
+  def all_tracks, do: theory_tracks() ++ tracks()
 
   defp lesson(id, name, description, objective, example, questions) do
     %{
@@ -674,6 +931,7 @@ defmodule Zoonk.Content.HoldemCurriculum do
       objective: objective,
       example: example,
       questions: questions,
+      difficulty: puzzle_difficulty(id),
       checkpoint?: false
     }
   end
@@ -686,9 +944,26 @@ defmodule Zoonk.Content.HoldemCurriculum do
       objective: objective,
       example: "Worked example: pause before deciding, list the information you have, then apply the relevant rule or heuristic.",
       questions: questions,
+      difficulty: puzzle_difficulty(id),
       checkpoint?: true
     }
   end
+
+  defp puzzle_difficulty(id)
+       when id in [
+              "b4-facing-a-raise",
+              "b-checkpoint",
+              "c3-board-advantage",
+              "c4-continuation-bet",
+              "c-checkpoint",
+              "puzzle-preflop-2",
+              "puzzle-flop-2",
+              "puzzle-turn-2",
+              "puzzle-river-2",
+              "puzzle-showdown-2"
+            ], do: :intermediate
+
+  defp puzzle_difficulty(_id), do: :beginner
 
   defp action_question(id, prompt, position, street, hole_cards, board, contributions, street_bet, hero_contribution, actions, rubric, assumption) do
     seat = position_seat(position)
@@ -712,7 +987,7 @@ defmodule Zoonk.Content.HoldemCurriculum do
 
     scenario = %{
       "scenario_id" => id,
-      "version" => 1,
+      "version" => if(id == "puzzle-preflop-1", do: 2, else: 1),
       "status" => "draft",
       "format" => "six_max_cash",
       "table" => %{"seat_count" => 6, "button_seat" => 4, "players_in_hand" => 2},
@@ -790,23 +1065,66 @@ defmodule Zoonk.Content.HoldemCurriculum do
     %{content: prompt, kind: :quiz, poker_scenario: scenario, options: options}
   end
 
-  defp lesson_steps(lesson) do
-    intro = %{
-      content: lesson.objective,
-      kind: :readonly
-    }
+  defp lesson_steps(%{puzzle_only?: true} = lesson) do
+    lesson.questions ++ [%{content: "Hand complete. Review the feedback, then try another spot.", kind: :readonly}]
+  end
 
-    worked_example = %{
-      content: "Worked example: #{lesson.example}",
-      kind: :readonly
-    }
+  defp lesson_steps(lesson) do
+    intro_steps = readonly_steps(lesson.objective)
+    teaching_steps = Enum.flat_map(Map.get(lesson, :teaching, []), &readonly_steps/1)
+    worked_example_steps = readonly_steps("Worked example: #{lesson.example}")
 
     finish = %{
-      content: "Lesson complete. Explain your choice using the key idea and facts from the scenario.",
+      content: "Lesson complete. Recall the key idea and how it helps you understand a hand.",
       kind: :readonly
     }
 
-    [intro, worked_example] ++ lesson.questions ++ [finish]
+    intro_steps ++ teaching_steps ++ worked_example_steps ++ lesson.questions ++ [finish]
+  end
+
+  defp readonly_steps(content) do
+    content
+    |> readable_chunks()
+    |> Enum.map(&%{content: &1, kind: :readonly})
+  end
+
+  defp readable_chunks(content) do
+    sentences =
+      content
+      |> String.split(~r/(?<=[.!?])\s+/, trim: true)
+      |> Enum.flat_map(&split_long_sentence/1)
+
+    {chunks, current} =
+      Enum.reduce(sentences, {[], nil}, fn sentence, {chunks, current} ->
+        candidate = if current, do: current <> " " <> sentence, else: sentence
+
+        if String.length(candidate) <= 250 do
+          {chunks, candidate}
+        else
+          {[current | chunks], sentence}
+        end
+      end)
+
+    Enum.reverse(if(current, do: [current | chunks], else: chunks))
+  end
+
+  defp split_long_sentence(sentence) when byte_size(sentence) <= 250, do: [sentence]
+
+  defp split_long_sentence(sentence) do
+    {chunks, current} =
+      sentence
+      |> String.split(~r/\s+/, trim: true)
+      |> Enum.reduce({[], ""}, fn word, {chunks, current} ->
+        candidate = if current == "", do: word, else: current <> " " <> word
+
+        if String.length(candidate) <= 250 do
+          {chunks, candidate}
+        else
+          {[current | chunks], word}
+        end
+      end)
+
+    Enum.reverse(if(current == "", do: chunks, else: [current | chunks]))
   end
 
   defp score_label(100), do: "Strong"
@@ -871,6 +1189,10 @@ defmodule Zoonk.Content.HoldemCurriculum do
     ["Preflop: Hero raised and an opponent called. The opponent checked to Hero."]
   end
 
+  defp skill_tag("puzzle-preflop-" <> _), do: "preflop.fundamentals"
+  defp skill_tag("puzzle-flop-" <> _), do: "flop.decisions"
+  defp skill_tag("puzzle-turn-" <> _), do: "turn.decisions"
+  defp skill_tag("puzzle-river-" <> _), do: "river.decisions"
   defp skill_tag("a" <> _), do: "rules.hand_reading"
   defp skill_tag("b" <> _), do: "preflop.fundamentals"
   defp skill_tag("c" <> _), do: "flop.decisions"

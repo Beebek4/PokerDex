@@ -18,6 +18,15 @@ module.exports = {
         "7xl": "3000px",
       },
       colors: {
+        poker: {
+          felt: "#2C1320",
+          plum: "#5F4B66",
+          slate: "#56667A",
+          mist: "#A7ADC6",
+          gold: "#D8B45A",
+          "gold-light": "#E8CC7A",
+          "gold-dark": "#A9812C",
+        },
         gray: {
           50: "#FFFFFF",
           100: "#F6F5F7",

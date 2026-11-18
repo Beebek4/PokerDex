@@ -3,52 +3,75 @@ defmodule ZoonkWeb.Live.Progress do
   use ZoonkWeb, :live_view
 
   alias Zoonk.Content
+  alias Zoonk.Content.CourseUtils
+
+  @theory_difficulties [beginner: "Beginner", intermediate: "Intermediate", advanced: "Advanced"]
+  @puzzle_streets ~w(preflop flop turn river showdown)
 
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
     attempts = Content.list_user_scenario_attempts(socket.assigns.current_user.id)
-    skills = summarize_by_skill(attempts)
-    due_reviews = Content.list_due_review_scenarios(socket.assigns.current_user.id, socket.assigns.school.id)
+    puzzle_progress = puzzle_progress(attempts)
+    theory_progress = theory_progress(socket.assigns.school, socket.assigns.current_user)
 
     {:ok,
      socket
      |> assign(:page_title, "Progress")
-     |> assign(:attempt_count, length(attempts))
-     |> assign(:skills, skills)
-     |> assign(:due_reviews, due_reviews)}
+     |> assign(:puzzle_progress, puzzle_progress)
+     |> assign(:theory_progress, theory_progress)}
   end
 
-  defp summarize_by_skill(attempts) do
-    attempts
-    |> Enum.reduce(%{}, fn attempt, skills ->
-      scenario = attempt.scenario_snapshot
-      question_type = get_in(scenario, ["question", "type"])
-      tags = Map.get(scenario, "skill_tags", [])
+  defp theory_progress(school, user) do
+    lessons =
+      school
+      |> Content.list_public_courses_by_school(:en)
+      |> Enum.map(& &1.data)
+      |> Enum.filter(&String.starts_with?(&1.slug, "theory-module-"))
+      |> Enum.flat_map(&Content.list_published_lessons(&1, user))
 
-      Enum.reduce(tags, skills, fn tag, skills ->
-        stats = Map.get(skills, tag, empty_stats())
+    %{
+      overall: summarize_theory_lessons(lessons, user),
+      difficulties:
+        Enum.flat_map(@theory_difficulties, fn {difficulty, title} ->
+          difficulty_lessons = Enum.filter(lessons, &(&1.difficulty == difficulty))
+          if difficulty_lessons == [], do: [], else: [%{title: title, stats: summarize_theory_lessons(difficulty_lessons, user)}]
+        end)
+    }
+  end
 
-        stats =
-          case question_type do
-            "choose_action" ->
-              recent = if length(stats.action_recent) < 5, do: [attempt.score | stats.action_recent], else: stats.action_recent
-              %{stats | action_count: stats.action_count + 1, action_score: stats.action_score + attempt.score, action_recent: recent}
+  defp summarize_theory_lessons(lessons, user) do
+    %{
+      lessons_percentage: if(lessons == [], do: 0, else: round(Enum.count(lessons, &CourseUtils.lesson_completed?(user, &1.user_lessons)) / length(lessons) * 100)),
+      accuracy_percentage: accuracy(Enum.flat_map(lessons, & &1.user_lessons))
+    }
+  end
 
-            "hand_ranking" ->
-              recent = if length(stats.objective_recent) < 5, do: [{attempt.correct, attempt.total} | stats.objective_recent], else: stats.objective_recent
-              %{stats | objective_count: stats.objective_count + attempt.total, objective_correct: stats.objective_correct + attempt.correct, objective_recent: recent}
+  defp puzzle_progress(attempts) do
+    attempts_by_street = Enum.group_by(attempts, fn attempt -> get_in(attempt.scenario_snapshot, ["street"]) || "other" end)
 
-            _ ->
-              stats
-          end
+    streets =
+      Enum.map(@puzzle_streets, fn street ->
+        street_attempts = Map.get(attempts_by_street, street, [])
 
-        Map.put(skills, tag, stats)
+        %{
+          title: String.capitalize(street),
+          accuracy_percentage: accuracy(street_attempts),
+          completed_count: length(street_attempts)
+        }
       end)
-    end)
-    |> Enum.sort_by(fn {tag, _stats} -> tag end)
+
+    %{
+      accuracy_percentage: accuracy(attempts),
+      completed_count: length(attempts),
+      streets: streets
+    }
   end
 
-  defp empty_stats do
-    %{action_count: 0, action_score: 0, action_recent: [], objective_count: 0, objective_correct: 0, objective_recent: []}
+  defp accuracy([]), do: 0
+
+  defp accuracy(records) do
+    total = Enum.sum(Enum.map(records, & &1.total))
+    correct = Enum.sum(Enum.map(records, & &1.correct))
+    if total == 0, do: 0, else: round(correct / total * 100)
   end
 end

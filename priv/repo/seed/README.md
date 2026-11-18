@@ -1,6 +1,6 @@
 # Local demo data
 
-Run `mix seed` to add the local PokerDex manager account, PokerDex school, and three authored Hold’em curriculum tracks. The seed is idempotent: rerunning it adds missing records and preserves existing lesson content.
+Run `mix seed` to add the local PokerDex manager account, PokerDex school, fourteen topic-led Theory modules, the legacy authored tracks, and five street-specific Puzzles packs. Each Puzzles street currently has two short, visual scenarios. The seed is idempotent: rerunning it adds missing records, synchronizes lesson skill levels, and preserves existing lesson content.
 
 The local manager account is `pokerdex-admin` / `admin@pokerdex.example` with the development-only password `Demo1234`. Do not use this account or run seeds in production.
 

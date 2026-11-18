@@ -3,9 +3,14 @@ defmodule ZoonkWeb.Live.UserSettings do
   use ZoonkWeb, :live_view
 
   alias Zoonk.Accounts
-  alias Zoonk.Storage
   alias ZoonkWeb.Components.DeleteItem
-  alias ZoonkWeb.Components.Upload
+
+  @avatar_choices [
+    %{label: "Spades", image: "/images/poker/suits/spade.png"},
+    %{label: "Hearts", image: "/images/poker/suits/heart.png"},
+    %{label: "Diamonds", image: "/images/poker/suits/diamond.png"},
+    %{label: "Clubs", image: "/images/poker/suits/club.png"}
+  ]
 
   # When users change their email address, we send them a link to confirm their new email.
   # That link contains a `token` parameter that we use to confirm their email when they
@@ -33,8 +38,27 @@ defmodule ZoonkWeb.Live.UserSettings do
       |> assign(:current_password, nil)
       |> assign(:form, to_form(changeset))
       |> assign(:trigger_submit, false)
+      |> assign(:avatar_choices, @avatar_choices)
 
     {:ok, socket}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("choose-avatar", %{"avatar" => avatar}, %{assigns: %{live_action: :avatar}} = socket) do
+    if Enum.any?(@avatar_choices, &(&1.image == avatar)) do
+      case Accounts.update_user_settings(socket.assigns.current_user, %{avatar: avatar}) do
+        {:ok, updated_user} ->
+          {:noreply,
+           socket
+           |> assign(:current_user, updated_user)
+           |> put_flash(:info, gettext("Avatar updated successfully!"))}
+
+        {:error, _changeset} ->
+          {:noreply, put_flash(socket, :error, gettext("Could not update avatar!"))}
+      end
+    else
+      {:noreply, put_flash(socket, :error, gettext("Choose one of the available avatars."))}
+    end
   end
 
   @impl Phoenix.LiveView

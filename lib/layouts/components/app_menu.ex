@@ -11,6 +11,7 @@ defmodule ZoonkWeb.Components.Layouts.AppMenu do
       <ul role="list" class="flex flex-1 flex-col gap-y-7">
         <li>
           <ul role="list" class="-mx-2 space-y-1">
+            <.menu_item navigate={~p"/play"} icon="poker-chips" emphasis active={@active_page == :play} title={gettext("Play")} />
             <.menu_item navigate={~p"/practice"} icon="tabler-cards" active={@active_page in [:practice, :review]} title={gettext("Puzzles")} />
             <.menu_item navigate={~p"/courses"} icon="tabler-book-2" active={@active_page in [:courselist, :mycourses, :courseview]} title={gettext("Theory")} />
             <.menu_item navigate={~p"/progress"} icon="tabler-chart-bar" active={@active_page == :progress} title={gettext("Progress")} />

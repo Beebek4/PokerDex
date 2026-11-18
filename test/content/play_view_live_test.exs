@@ -7,6 +7,7 @@ defmodule ZoonkWeb.PlayViewLiveTest do
   alias Zoonk.Accounts
   alias Zoonk.Content
   alias Zoonk.Content.HoldemCurriculum
+  alias Zoonk.Content.UserLesson
   alias Zoonk.Content.UserSelection
   alias Zoonk.Repo
   alias Zoonk.Storage
@@ -256,6 +257,62 @@ defmodule ZoonkWeb.PlayViewLiveTest do
       assert selection.correct == 1
     end
 
+    test "puzzle choices answer immediately and continue endlessly without lesson completion", %{conn: conn, course: course, user: user} do
+      puzzle_course = course_fixture(%{school_id: course.school_id, slug: "holdem-puzzles-preflop"})
+      first_lesson = lesson_fixture(%{course_id: puzzle_course.id, order: 1})
+      second_lesson = lesson_fixture(%{course_id: puzzle_course.id, order: 2})
+
+      first_step =
+        lesson_step_fixture(%{
+          lesson_id: first_lesson.id,
+          order: 1,
+          content: "Puzzle one?",
+          poker_scenario: put_in(@poker_scenario, ["question", "prompt"], "Puzzle one?")
+        })
+
+      second_step =
+        lesson_step_fixture(%{
+          lesson_id: second_lesson.id,
+          order: 1,
+          content: "Puzzle two?",
+          poker_scenario: put_in(@poker_scenario, ["question", "prompt"], "Puzzle two?")
+        })
+
+      for step <- [first_step, second_step] do
+        step_option_fixture(%{lesson_step_id: step.id, title: "Fold", correct?: false, score: 30, score_label: "Review"})
+        step_option_fixture(%{lesson_step_id: step.id, title: "Call", correct?: false, score: 70, score_label: "Reasonable"})
+        step_option_fixture(%{lesson_step_id: step.id, title: "Raise", correct?: true, score: 100, score_label: "Strong"})
+      end
+
+      {:ok, lv, _html} = live(conn, ~p"/c/#{puzzle_course.slug}/#{first_lesson.id}")
+
+      refute has_element?(lv, "header .bg-teal-400")
+      refute has_element?(lv, "input[type='radio']")
+      refute has_element?(lv, "h1", "Lesson complete")
+      assert has_element?(lv, "button[phx-click='choose-option']")
+
+      initial_step_id = lv |> render() |> then(&Regex.run(~r/name="step_id" value="(\d+)"/, &1)) |> Enum.at(1) |> String.to_integer()
+
+      lv
+      |> element("button[phx-click='choose-option']", "Raise")
+      |> render_click()
+
+      assert has_element?(lv, "div[role='alert'] h3", "Strong choice")
+      assert has_element?(lv, "button[phx-click='next-puzzle']", "Next puzzle")
+
+      selection = Repo.get_by!(UserSelection, user_id: user.id, step_id: initial_step_id)
+      assert selection.acknowledged?
+
+      lv |> element("button[phx-click='next-puzzle']") |> render_click()
+
+      next_step_id = lv |> render() |> then(&Regex.run(~r/name="step_id" value="(\d+)"/, &1)) |> Enum.at(1) |> String.to_integer()
+      assert next_step_id != initial_step_id
+      assert has_element?(lv, "button[phx-click='choose-option']")
+      refute has_element?(lv, "h1", "Lesson complete")
+      refute Repo.get_by(UserLesson, user_id: user.id, lesson_id: first_lesson.id)
+      refute Repo.get_by(UserLesson, user_id: user.id, lesson_id: second_lesson.id)
+    end
+
     test "shows the structured hand context before the learner chooses", %{conn: conn, course: course} do
       lesson = lesson_fixture(%{course_id: course.id})
 
@@ -277,7 +334,7 @@ defmodule ZoonkWeb.PlayViewLiveTest do
       assert has_element?(lv, "section[aria-label='Poker scenario']")
       assert has_element?(lv, "h2", "What should Hero do?")
       assert has_element?(lv, "p", "Cutoff")
-      assert has_element?(lv, "p", "No cards dealt yet")
+      refute has_element?(lv, "p", "No cards dealt yet")
       assert has_element?(lv, "img[src='/images/poker/pokertable-removebg-preview.png']")
       assert has_element?(lv, "span[aria-label='Ace of spades']")
       assert has_element?(lv, "span[aria-label='King of diamonds']")

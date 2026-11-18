@@ -1,6 +1,6 @@
-<div class="md:pr-72 lg:pr-80 xl:pr-96">
-  <div :if={@next_lesson} class="mx-4 mt-4 rounded-2xl border border-cyan-100 bg-cyan-50 p-4 sm:mx-6 lg:mx-8">
-    <p class="text-sm text-cyan-800">
+<div class="bg-[#2C1320] text-white md:pr-72 lg:pr-80 xl:pr-96">
+  <div :if={@next_lesson} class="border-poker-gold/30 bg-[#453047] mx-4 mt-4 rounded-2xl border p-4 sm:mx-6 lg:mx-8">
+    <p class="text-poker-gold text-sm">
       <%= if @resume_lesson?, do: gettext("Pick up where you left off"), else: gettext("Your next lesson") %>
     </p>
     <.link_button navigate={~p"/c/#{@course.slug}/#{@next_lesson.id}"} color={:primary} class="mt-2 w-full sm:w-auto">
@@ -13,7 +13,7 @@
       :for={{lesson, index} <- Enum.with_index(@lessons)}
       navigate={lesson_link(lesson_locked?(@course, @course_user), @course, lesson)}
       class={[
-        "text-gray-700 bg-white border border-l-8 flex gap-2 p-4 rounded-2xl hover:outline outline-2 outline-offset-2 focus:outline-offset-4",
+        "text-[#E2DCE5] bg-[#351B2B] border border-white/10 border-l-4 flex gap-3 p-4 rounded-2xl transition hover:border-poker-gold/50 hover:bg-[#40263A] hover:outline outline-2 outline-offset-2 outline-poker-gold/50 focus:outline-offset-4",
         lesson_color(@course, @course_user, @current_user, lesson.user_lessons)
       ]}
     >
@@ -25,22 +25,25 @@
         <dt class="flex gap-2 font-semibold">
           <span class="flex-1 truncate"><%= lesson.name %></span>
 
+          <span :if={String.starts_with?(@course.slug, "theory-")} class="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">
+            <%= lesson.difficulty |> Atom.to_string() |> String.capitalize() %>
+          </span>
           <.badge :if={score} color={CourseUtils.score_color(score)}><%= score %></.badge>
           <.badge :if={lesson_locked?(@course, @course_user)} color={:black} icon="tabler-lock"><%= gettext("Locked") %></.badge>
         </dt>
-        <dd class="text-sm text-gray-500"><%= lesson.description %></dd>
+        <dd class="text-[#A7ADC6] text-sm"><%= lesson.description %></dd>
       </div>
     </.link>
   </dl>
 </div>
 
-<aside class="fixed inset-y-0 top-16 right-0 bottom-0 hidden w-72 overflow-y-auto border-l border-gray-200 px-4 py-4 md:block lg:w-80 lg:px-6 lg:py-6 xl:w-96 xl:px-8 xl:py-8">
-  <header class="rounded-2xl bg-white text-gray-700 shadow">
+<aside class="border-white/10 bg-[#24101A] fixed inset-y-0 top-16 right-0 bottom-0 hidden w-72 overflow-y-auto border-l px-4 py-4 md:block lg:w-80 lg:px-6 lg:py-6 xl:w-96 xl:px-8 xl:py-8">
+  <header class="border-white/10 bg-[#351B2B] text-[#E2DCE5] shadow-black/20 rounded-2xl border shadow-xl">
     <img :if={@course.cover} src={Storage.get_url(@course.cover)} alt={gettext("Cover")} class="aspect-[4/2] rounded-2xl object-cover p-1" />
 
     <div class="p-4">
-      <h1 class="text-xl font-semibold"><%= @course.name %></h1>
-      <h2 class="font-light"><%= @course.description %></h2>
+      <h1 class="text-xl font-semibold text-white"><%= @course.name %></h1>
+      <h2 class="text-[#A7ADC6] font-light"><%= @course.description %></h2>
 
       <.button :if={is_nil(@course_user) && not @course.public?} color={:primary} icon="tabler-book-download" phx-click="enroll" class="my-4 w-max">
         <%= dgettext("courses", "Request to join") %>

@@ -1,55 +1,75 @@
-<section class="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-  <div class="border-indigo-800/20 bg-indigo-900/95 sticky top-16 z-30 -mx-4 border-b px-4 py-3 text-white shadow-md backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-    <div class="mx-auto flex max-w-6xl items-center justify-between gap-4">
-      <h1 class="text-lg font-bold sm:text-xl">Just Play</h1>
-      <.link_button :if={@quick_play} navigate={~p"/c/#{@quick_play.course.slug}/#{@quick_play.lesson.id}"} color={:primary} class="shrink-0">
-        Play a lesson
-      </.link_button>
-      <span :if={is_nil(@quick_play)} class="text-sm text-indigo-100">Puzzles coming soon</span>
-    </div>
-  </div>
+<section class="mx-auto w-full max-w-3xl px-4 py-5 text-white sm:px-6 sm:py-7">
+  <h1 class="text-2xl font-bold tracking-tight text-white">Puzzles</h1>
 
-  <div class="mt-8 grid gap-5 md:grid-cols-2">
-    <article
-      :for={section <- @sections}
-      :if={section.track.course}
-      class="group min-h-[15rem] flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm transition hover:shadow-lg"
-    >
-      <img src={section.cover} alt="" class="h-36 w-full object-cover" />
-      <div class="flex flex-1 flex-col p-5">
-        <div class="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p class="text-sm font-semibold text-cyan-800"><%= section.lesson_count %> lessons</p>
-            <h2 class="mt-2 text-xl font-bold text-gray-950"><%= section.title %></h2>
-          </div>
-          <.link
-            :if={section.lessons == []}
-            navigate={~p"/c/#{section.track.course.slug}"}
-            class="inline-flex min-h-10 items-center rounded-xl bg-cyan-800 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-800"
-          >
-            Open puzzles
-          </.link>
-        </div>
-
-        <div :if={section.lessons != []} class="mt-4 flex flex-1 flex-col gap-2">
-          <.link
-            :for={lesson <- section.lessons}
-            navigate={~p"/c/#{section.track.course.slug}/#{lesson.id}"}
-            class="inline-flex min-h-10 items-center justify-between rounded-xl bg-gray-50 px-3 py-2 text-sm font-medium text-gray-800 hover:bg-gray-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-800"
-          >
-            <%= lesson.name %>
-            <.icon name="tabler-chevron-right" class="h-4 w-4 text-gray-400" />
-          </.link>
-        </div>
-
-        <details class="group mt-4 border-t border-gray-100 pt-3">
-          <summary class="flex w-fit cursor-pointer list-none items-center gap-2 rounded-lg py-1 text-sm font-semibold text-cyan-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-800">
-            <span>More</span>
-            <.icon name="tabler-chevron-down" class="h-4 w-4 transition-transform group-open:rotate-180" />
-          </summary>
-          <p class="mt-2 max-w-2xl text-sm leading-6 text-gray-600"><%= section.description %></p>
-        </details>
+  <section
+    aria-labelledby="just-play-heading"
+    class="border-poker-gold/30 from-[#5F4B66] to-[#2C1320] shadow-black/20 mt-4 overflow-hidden rounded-2xl border bg-gradient-to-br p-4 text-white shadow-xl sm:p-5"
+  >
+    <div class="flex items-center justify-between gap-3">
+      <div class="min-w-0">
+        <p class="tracking-[0.16em] text-poker-gold text-xs font-bold uppercase">Just Play</p>
+        <h2 id="just-play-heading" class="mt-1 text-xl font-bold leading-tight">Jump into a puzzle</h2>
+        <p class="text-[#E2DCE5] mt-1 text-sm">Get a random hand and keep playing for as long as you like.</p>
       </div>
-    </article>
+
+      <div aria-hidden="true" class="h-[4.5rem] w-[4.2rem] relative shrink-0">
+        <div class="absolute top-2 left-0 flex h-14 w-10 -rotate-12 flex-col justify-between rounded-lg bg-white p-1.5 text-sm font-bold text-gray-900 shadow-lg">
+          <span>A</span><span class="self-end text-base leading-none">♠</span>
+        </div>
+        <div class="absolute top-0 right-0 flex h-14 w-10 rotate-6 flex-col justify-between rounded-lg bg-white p-1.5 text-sm font-bold text-rose-700 shadow-lg">
+          <span>K</span><span class="self-end text-base leading-none">♥</span>
+        </div>
+      </div>
+    </div>
+
+    <.link
+      :if={@quick_play}
+      navigate={@quick_play_path}
+      class="mt-3 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-poker-gold px-4 py-2.5 text-sm font-bold text-[#2C1320] shadow-md shadow-black/20 transition hover:bg-poker-gold-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-poker-gold active:scale-[0.99]"
+    >
+      Play a hand <.icon name="tabler-arrow-right" class="h-4 w-4" />
+    </.link>
+    <p :if={is_nil(@quick_play)} class="bg-white/10 text-[#E2DCE5] mt-3 rounded-xl px-3 py-2 text-sm">Puzzles are being prepared.</p>
+  </section>
+
+  <div class="mt-5">
+    <div class="mb-2 flex items-baseline justify-between gap-3">
+      <h2 class="text-lg font-bold text-white">Choose a street</h2>
+      <label class="text-[#A7ADC6] flex items-center gap-2 text-xs font-medium">
+        <span>Skill</span>
+        <select
+          id="puzzle-difficulty"
+          name="difficulty"
+          phx-change="set-difficulty"
+          value={Atom.to_string(@selected_difficulty)}
+          class="min-h-9 border-white/20 bg-[#351B2B] rounded-lg border py-1 pr-7 pl-2 text-xs font-semibold text-white focus:border-poker-gold focus:ring-poker-gold/30 focus:outline-none focus:ring-2"
+        >
+          <option :for={{level, label} <- @difficulty_options} value={Atom.to_string(level)}><%= label %></option>
+        </select>
+      </label>
+    </div>
+
+    <div class="divide-white/10 border-white/10 bg-[#351B2B] shadow-black/20 divide-y overflow-hidden rounded-2xl border shadow-xl">
+      <div :for={section <- @sections} id={"puzzles-#{section.key}"} class="min-h-[3.75rem] flex items-center justify-between gap-3 px-3 py-2.5 sm:px-4">
+        <div class="flex min-w-0 items-center gap-3">
+          <span class={["h-2.5 w-2.5 shrink-0 rounded-full", section.accent]} aria-hidden="true"></span>
+          <div class="min-w-0">
+            <h3 class="truncate font-semibold text-white"><%= section.title %></h3>
+            <p :if={section.lessons != [] and section.play_lessons == []} class="text-[#A7ADC6] text-xs">No puzzles at this skill yet</p>
+            <p :if={section.lessons == []} class="text-[#8797AF] text-xs">Coming soon</p>
+          </div>
+        </div>
+
+        <button
+          :if={section.play_lessons != []}
+          type="button"
+          phx-click="play-street"
+          phx-value-street={section.key}
+          class="min-h-10 border-[#8797AF] bg-[#56667A] inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl border px-3.5 text-sm font-semibold text-white shadow-sm transition hover:border-[#A7ADC6] hover:bg-[#65758A] focus-visible:outline-poker-gold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-[0.98]"
+        >
+          <.icon name="tabler-player-play-filled" class="h-3.5 w-3.5" /> Play
+        </button>
+      </div>
+    </div>
   </div>
 </section>

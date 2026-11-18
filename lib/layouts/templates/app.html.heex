@@ -6,15 +6,36 @@
   <.app_menu active_page={@active_page} />
 </.menu_desktop>
 
-<main :if={show_menu?(@active_page)} class="min-h-dvh flex flex-col lg:pl-72">
+<main :if={show_menu?(@active_page)} class="min-h-dvh bg-poker-felt flex flex-col lg:pl-72">
   <header
     :if={not user_settings?(@active_page)}
-    class="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 bg-white px-4 sm:gap-x-6 sm:px-6 lg:px-8"
+    class="border-white/15 bg-[#5F4B66] sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between gap-x-4 border-b px-4 text-white sm:gap-x-6 sm:px-6 lg:px-8"
   >
-    <button type="button" class="-m-2.5 p-2.5 text-gray-700 lg:hidden" phx-click={show_drawer("mobile-menu")}>
-      <span class="sr-only"><% gettext("Open sidebar") %></span>
-      <.icon name="tabler-layout-sidebar-left-expand" class="h-6 w-6" />
-    </button>
+    <div class="flex min-w-0 items-center gap-2 sm:gap-3">
+      <button type="button" class="text-poker-mist -m-2.5 p-2.5 hover:text-poker-gold lg:hidden" phx-click={show_drawer("mobile-menu")}>
+        <span class="sr-only"><% gettext("Open sidebar") %></span>
+        <.icon name="tabler-layout-sidebar-left-expand" class="h-6 w-6" />
+      </button>
+
+      <.avatar
+        src={@current_user.avatar}
+        alt={if @current_user.guest?, do: "Guest", else: @current_user.first_name || @current_user.username || "Player"}
+        size={:medium}
+        class="border border-white/25 bg-[#2C1320]"
+      />
+
+      <span class="max-w-24 border-white/15 bg-[#2C1320]/35 truncate rounded-lg border px-3 py-2 text-sm font-semibold text-white sm:max-w-48">
+        <%= if @current_user.guest?, do: "Guest", else: @current_user.first_name || @current_user.username || "Player" %>
+      </span>
+    </div>
+
+    <span
+      class="border-poker-gold/40 bg-[#2C1320]/35 text-poker-gold inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-bold"
+      aria-label="1 day streak"
+    >
+      <.icon name="tabler-flame" class="h-4 w-4" aria-hidden="true" />
+      <span>1 day streak</span>
+    </span>
   </header>
 
   <div
@@ -26,40 +47,45 @@
     <.link navigate={~p"/users/settings"} class="font-semibold underline"><%= gettext("Update your email address") %></.link>
   </div>
 
-  <nav :if={user_settings?(@active_page)} class="border-gray-900/10 sticky top-0 z-40 w-full border-b bg-white">
-    <ul role="list" class="border-gray-900/10 flex min-w-full flex-none gap-x-6 overflow-x-auto p-4 text-sm font-semibold leading-6 text-gray-400 sm:px-6 lg:px-8">
-      <li class="lg:hidden">
-        <.link href={~p"/"}><%= gettext("Home") %></.link>
-      </li>
+  <nav :if={user_settings?(@active_page)} class="border-white/15 bg-[#5F4B66] shadow-black/10 sticky top-0 z-40 w-full border-b text-white shadow-md">
+    <div class="flex min-w-0 items-center gap-3 px-3 sm:px-6 lg:px-8">
+      <.link navigate={~p"/home"} class="flex h-14 shrink-0 items-center gap-2" aria-label="PokerDex home">
+        <img src={school_logo(@school, @app)} alt="" class="h-11 w-11 object-contain" />
+        <span class="shrink-0 text-xl font-extrabold leading-none tracking-tight">
+          <span class="text-[#18151A]">Poker</span><span class="text-[#C62828]">Dex</span>
+        </span>
+      </.link>
 
-      <.dashboard_menu_item :if={@current_user.guest?} active={@active_page == :usersettings_profile} navigate={~p"/users/settings"}>
-        <%= gettext("Setup") %>
-      </.dashboard_menu_item>
+      <ul role="list" class="flex min-w-0 flex-1 gap-x-4 overflow-x-auto py-3 text-sm font-semibold leading-6 text-white sm:gap-x-6">
+        <.dashboard_menu_item :if={@current_user.guest?} active={@active_page == :usersettings_profile} navigate={~p"/users/settings"}>
+          <%= gettext("Setup") %>
+        </.dashboard_menu_item>
 
-      <.dashboard_menu_item :if={!@current_user.guest?} active={@active_page == :usersettings_profile} navigate={~p"/users/settings"}>
-        <%= gettext("Profile") %>
-      </.dashboard_menu_item>
+        <.dashboard_menu_item :if={!@current_user.guest?} active={@active_page == :usersettings_profile} navigate={~p"/users/settings"}>
+          <%= gettext("Profile") %>
+        </.dashboard_menu_item>
 
-      <.dashboard_menu_item :if={!@current_user.guest?} active={@active_page == :usersettings_avatar} navigate={~p"/users/settings/avatar"}>
-        <%= gettext("Avatar") %>
-      </.dashboard_menu_item>
+        <.dashboard_menu_item :if={!@current_user.guest?} active={@active_page == :usersettings_avatar} navigate={~p"/users/settings/avatar"}>
+          <%= gettext("Avatar") %>
+        </.dashboard_menu_item>
 
-      <.dashboard_menu_item :if={!@current_user.guest?} active={@active_page == :usersettings_email} navigate={~p"/users/settings/email"}>
-        <%= gettext("Email") %>
-      </.dashboard_menu_item>
+        <.dashboard_menu_item :if={!@current_user.guest?} active={@active_page == :usersettings_email} navigate={~p"/users/settings/email"}>
+          <%= gettext("Email") %>
+        </.dashboard_menu_item>
 
-      <.dashboard_menu_item :if={!@current_user.guest?} active={@active_page == :usersettings_password} navigate={~p"/users/settings/password"}>
-        <%= gettext("Password") %>
-      </.dashboard_menu_item>
+        <.dashboard_menu_item :if={!@current_user.guest?} active={@active_page == :usersettings_password} navigate={~p"/users/settings/password"}>
+          <%= gettext("Password") %>
+        </.dashboard_menu_item>
 
-      <.dashboard_menu_item :if={!@current_user.guest?} method="delete" href={~p"/users/logout"}>
-        <%= gettext("Logout") %>
-      </.dashboard_menu_item>
+        <.dashboard_menu_item :if={!@current_user.guest?} method="delete" href={~p"/users/logout"}>
+          <%= gettext("Logout") %>
+        </.dashboard_menu_item>
 
-      <.dashboard_menu_item active={@active_page == :usersettings_delete} navigate={~p"/users/settings/delete"}>
-        <%= gettext("Delete") %>
-      </.dashboard_menu_item>
-    </ul>
+        <.dashboard_menu_item active={@active_page == :usersettings_delete} navigate={~p"/users/settings/delete"}>
+          <%= gettext("Delete") %>
+        </.dashboard_menu_item>
+      </ul>
+    </div>
   </nav>
 
   <%= @inner_content %>

@@ -5,12 +5,13 @@ PokerDex is a mobile-friendly Texas Hold’em learning app. It combines short th
 ## Current MVP
 
 - Guest onboarding, with optional account settings.
-- Theory lessons that teach Hold’em concepts with clear explanations, examples, and enough text to build understanding.
-- Puzzles that foreground the board, table position, and decision, with minimal on-screen text and a concise explanation of why after the answer.
+- A Play preview that introduces the planned bot-table experience. Full bot matches are not playable yet.
+- A topic-led Theory path from poker foundations and decision-making through preflop, equity, board reading, betting, responses, and later-street planning. Beginner lessons and a first stack-depth lesson are available; other intermediate and advanced topics are shown as planned modules.
+- Puzzles grouped by Preflop, Flop, Turn, River, and Showdown. Each street has two short, authored visual puzzles. Choose a street to start a random hand, with an optional skill-level filter.
 - Saved lesson progress, per-skill practice summaries, and review questions.
 - A responsive interface designed for phone browsers as well as desktop.
 
-The current **Just Play** action opens a randomly selected authored lesson from the preflop or flop tracks. It does not yet generate a new random puzzle. Strategy rubrics are draft teaching heuristics and need review by a poker-knowledgeable person before public release.
+Home now puts the Play preview first, with lessons and Theory secondary. The preview points to the planned bot-table experience; a full poker game engine and bot opponents are not implemented yet. The current **Just Play** action opens a randomly selected authored puzzle lesson across the five streets. It does not yet generate a new random puzzle. Strategy rubrics are draft teaching heuristics and need review by a poker-knowledgeable person before public release.
 
 ## Run locally
 
@@ -42,9 +43,11 @@ mix phx.server           # start the development server
 
 ## Data and content
 
-PostgreSQL stores users, lessons, answers, and progress. The authored starter curriculum lives in `lib/content/holdem_curriculum.ex`; `priv/repo/seed/holdem_curriculum.ex` writes it to the local database. The seed process is for development only—do not run it against a production database.
+PostgreSQL stores users, lessons, answers, and progress. Authored puzzle content lives in `lib/content/holdem_curriculum.ex`; Theory topics and lessons live in `lib/content/holdem_theory_curriculum.ex`. `priv/repo/seed/holdem_curriculum.ex` writes both to the local database. The seed process is for development only—do not run it against a production database.
 
 Scenario structure and review requirements are documented in [HOLDEM_CONTENT_CONTRACT.md](HOLDEM_CONTENT_CONTRACT.md). The product roadmap and completed work are in [HOLDEM_TRAINER_PLAN.md](HOLDEM_TRAINER_PLAN.md).
+
+The topic-led Theory page follows the progression in [HOLDEM_THEORY_CURRICULUM.md](HOLDEM_THEORY_CURRICULUM.md). Beginner lessons are authored for the first concepts, while later modules remain visible as planned topics.
 
 ## Project structure
 
@@ -59,10 +62,12 @@ The school and course foundation is still present because the learner routes, co
 
 ## Next product steps
 
-1. Review the draft strategic answers with a poker-knowledgeable reviewer.
-2. Give Theory and Puzzles distinct experiences: teach concepts in sequence in Theory; keep Puzzles visual and focused on reading board texture and position, then explain the reasoning after the choice. They may reuse the current authored scenario pool at first.
-3. Add a constrained, reproducible puzzle generator only after its templates and rule checks are reviewed.
-4. Check accessibility, phone layouts, and data handling before inviting external learners.
+1. Design and implement the first playable bot-table loop, starting with clear rules, legal actions, and play-money hands.
+2. Review the draft strategic puzzle answers with a poker-knowledgeable reviewer.
+3. Keep Puzzles visual and brief before the decision, then explain the reasoning after the choice. Expand the authored street sets as their answer keys are reviewed.
+4. Fill in the remaining beginner Theory topics, then add the intermediate and advanced modules from the curriculum note.
+5. Add a constrained, reproducible puzzle generator only after its templates and rule checks are reviewed.
+6. Check accessibility, phone layouts, and data handling before inviting external learners.
 
 ## License
 

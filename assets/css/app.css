@@ -9,6 +9,23 @@
   }
 }
 
+/* Keep account settings readable on the app's dark poker background. */
+#settings-form label {
+  color: #f2f1f6;
+}
+
+#settings-form .text-gray-500 {
+  color: #d8dce8;
+}
+
+#settings-form .text-gray-700 {
+  color: #e2e6ef;
+}
+
+#delete-form label {
+  color: #f2f1f6;
+}
+
 @layer utilities {
   .min-h-dvh {
     min-height: 100vh;

@@ -23,7 +23,11 @@ defmodule ZoonkWeb.Components.Content.LessonStep do
 
       <.youtube :if={is_nil(@step.poker_scenario)} content={@step.content} />
 
-      <section :if={@step.poker_scenario} class="w-full overflow-hidden rounded-3xl border border-slate-200 bg-white text-slate-950 shadow-sm" aria-label="Poker scenario">
+      <section
+        :if={@step.poker_scenario}
+        class="border-white/15 bg-[#351B2B] shadow-black/25 w-full overflow-hidden rounded-3xl border text-white shadow-xl"
+        aria-label="Poker scenario"
+      >
         <% scenario = @step.poker_scenario %>
         <% hero = scenario["hero"] || %{} %>
         <% table = scenario["table"] || %{} %>
@@ -31,9 +35,9 @@ defmodule ZoonkWeb.Components.Content.LessonStep do
         <% opponents = opponent_seats(hero["seat"], table["seat_count"]) %>
         <% dealer = dealer_seat(hero["seat"], table["button_seat"], table["seat_count"]) %>
 
-        <div class="bg-slate-950 px-5 py-4 text-white sm:px-6">
+        <div class="border-poker-gold/25 from-[#24101A] to-[#453047] border-b bg-gradient-to-r px-5 py-4 text-white sm:px-6">
           <div class="flex flex-wrap items-center justify-between gap-2">
-            <p class="text-xs font-semibold uppercase tracking-wider text-cyan-300">Six-handed cash · fictional big blinds</p>
+            <p class="text-[#D8DCE8] text-xs font-semibold uppercase tracking-wider">Six-handed cash · fictional big blinds</p>
             <div class="flex flex-wrap items-center gap-2">
               <span :if={scenario["status"] == "draft"} class="bg-amber-300/20 rounded-full px-3 py-1 text-xs font-medium text-amber-100">Draft content · review pending</span>
               <span class="bg-white/10 rounded-full px-3 py-1 text-xs font-medium"><%= String.capitalize(scenario["street"] || "") %></span>
@@ -48,13 +52,13 @@ defmodule ZoonkWeb.Components.Content.LessonStep do
             <.scenario_stat label="To call" value={amount(get_in(scenario, ["action_state", "amount_to_call_bb"]) || 0)} />
             <.scenario_stat label="Your stack" value={amount(hero["remaining_stack_bb"])} />
             <.scenario_stat label="Effective stack" value={amount(scenario["effective_stack_bb"])} />
-            <div class="rounded-xl border border-slate-200 p-3">
-              <p class="text-xs text-slate-500">Position</p>
+            <div class="border-[#8797AF] bg-[#56667A] rounded-xl border p-3 text-white">
+              <p class="text-xs font-medium text-white">Position</p>
               <p class="mt-1 font-semibold"><%= position_label(hero["position"]) %></p>
             </div>
           </div>
 
-          <div class="rounded-2xl bg-slate-50 p-3 sm:p-5">
+          <div class="border-white/10 bg-[#2C1320] rounded-2xl border p-3 sm:p-5">
             <div class="aspect-square max-w-[500px] relative mx-auto w-full overflow-hidden" aria-label={"Poker table · #{table["players_in_hand"]} players in hand"}>
               <img src={~p"/images/poker/pokertable-removebg-preview.png"} alt="" class="pointer-events-none absolute inset-0 h-full w-full select-none object-contain" />
 
@@ -74,10 +78,6 @@ defmodule ZoonkWeb.Components.Content.LessonStep do
               >
                 <.playing_card :for={card <- scenario["board"] || []} card={card} />
               </div>
-
-              <p :if={(scenario["board"] || []) == []} class="top-[52%] text-[10px] text-white/80 absolute left-1/2 -translate-x-1/2 text-center font-medium sm:text-xs">
-                No cards dealt yet
-              </p>
 
               <div
                 class="left-[39%] top-[63.5%] w-[22%] gap-[2%] absolute z-10 grid grid-cols-2"
@@ -103,20 +103,20 @@ defmodule ZoonkWeb.Components.Content.LessonStep do
 
           <div class="grid gap-4 sm:grid-cols-2">
             <div>
-              <h3 class="text-sm font-semibold text-slate-900">Blinds</h3>
-              <p class="mt-1 text-sm text-slate-600"><%= amount(get_in(scenario, ["blinds", "small_blind"])) %> / <%= amount(get_in(scenario, ["blinds", "big_blind"])) %> BB</p>
+              <h3 class="text-sm font-semibold text-white">Blinds</h3>
+              <p class="text-[#A7ADC6] mt-1 text-sm"><%= amount(get_in(scenario, ["blinds", "small_blind"])) %> / <%= amount(get_in(scenario, ["blinds", "big_blind"])) %> BB</p>
             </div>
             <div :if={(scenario["action_history"] || []) != []}>
-              <h3 class="text-sm font-semibold text-slate-900">What happened</h3>
-              <ul class="mt-1 space-y-1 text-sm text-slate-600">
+              <h3 class="text-sm font-semibold text-white">What happened</h3>
+              <ul class="text-[#A7ADC6] mt-1 space-y-1 text-sm">
                 <li :for={action <- scenario["action_history"]}><%= action %></li>
               </ul>
             </div>
           </div>
 
-          <div :if={(scenario["assumptions"] || []) != []} class="rounded-xl border border-amber-200 bg-amber-50 p-3">
-            <h3 class="text-sm font-semibold text-amber-950">Assumptions for this question</h3>
-            <ul class="mt-1 list-inside list-disc text-sm leading-5 text-amber-900">
+          <div :if={(scenario["assumptions"] || []) != []} class="border-[#8797AF] bg-[#56667A] rounded-xl border p-3 text-white">
+            <h3 class="text-sm font-semibold text-white">Assumptions for this question</h3>
+            <ul class="text-[#F2F1F6] mt-1 list-inside list-disc text-sm leading-5">
               <li :for={assumption <- scenario["assumptions"]}><%= assumption %></li>
             </ul>
           </div>
@@ -131,9 +131,9 @@ defmodule ZoonkWeb.Components.Content.LessonStep do
 
   defp scenario_stat(assigns) do
     ~H"""
-    <div class="rounded-xl border border-slate-200 p-3">
-      <p class="text-xs text-slate-500"><%= @label %></p>
-      <p class="mt-1 font-semibold tabular-nums"><%= @value %> BB</p>
+    <div class="border-[#8797AF] bg-[#56667A] rounded-xl border p-3 text-white">
+      <p class="text-xs font-medium text-white"><%= @label %></p>
+      <p class="mt-1 text-lg font-bold tabular-nums"><%= @value %> BB</p>
     </div>
     """
   end
@@ -187,18 +187,20 @@ defmodule ZoonkWeb.Components.Content.LessonStep do
         <div class="min-w-0 flex-1">
           <div class="flex flex-wrap items-center gap-2">
             <h3 class="font-bold"><%= feedback_heading(@selected) %></h3>
-            <span :if={is_integer(@selected.score)} class="rounded-full bg-white px-2 py-1 text-xs font-semibold"><%= @selected.score_label %> · <%= @selected.score %>/100</span>
+            <span :if={is_integer(@selected.score)} class="bg-[#2C1320] rounded-full px-2 py-1 text-xs font-semibold text-white">
+              <%= @selected.score_label %> · <%= @selected.score %>/100
+            </span>
           </div>
           <h4 :if={@selected.feedback} class="mt-1 text-sm leading-5"><%= @selected.feedback %></h4>
 
-          <div :if={@scenario} class="bg-white/80 mt-3 rounded-xl p-3 text-sm">
-            <p class="font-semibold">Evidence and takeaway</p>
+          <div :if={@scenario} class="border-[#8797AF] bg-[#56667A] mt-3 rounded-xl border p-3 text-sm text-white">
+            <p class="font-semibold text-white">Evidence and takeaway</p>
             <p class="mt-1 leading-5"><%= evidence_summary(@scenario) %></p>
             <p class="mt-1 leading-5">Use the stated assumptions and the information available before the decision. This score reflects a learning rubric, not a solver result.</p>
           </div>
 
-          <details :if={length(@options) > 1} class="bg-white/80 mt-3 rounded-xl p-3 text-sm">
-            <summary class="cursor-pointer font-semibold">See the other choices</summary>
+          <details :if={length(@options) > 1} class="border-[#8797AF] bg-[#56667A] mt-3 rounded-xl border p-3 text-sm text-white">
+            <summary class="cursor-pointer font-semibold text-white">See the other choices</summary>
             <ul class="mt-2 space-y-2">
               <li :for={option <- @options} :if={option.id != @selected.id} class="border-t border-gray-200 pt-2">
                 <p class="font-semibold"><%= option.title %><span :if={is_integer(option.score)}> · <%= option.score_label %> (<%= option.score %>/100)</span></p>
@@ -294,11 +296,11 @@ defmodule ZoonkWeb.Components.Content.LessonStep do
   defp dealer_seat(_hero_seat, _button_seat, _seat_count), do: nil
 
   defp seat_layout(0), do: %{dealer_position: "left-[33%] top-[71%]"}
-  defp seat_layout(1), do: %{cards_position: "left-[75%] top-[65%]", dealer_position: "left-[69%] top-[68%]"}
-  defp seat_layout(2), do: %{cards_position: "left-[43%] top-[17%]", dealer_position: "left-[58%] top-[23%]"}
-  defp seat_layout(3), do: %{cards_position: "left-[69%] top-[17%]", dealer_position: "left-[86%] top-[23%]"}
-  defp seat_layout(4), do: %{cards_position: "left-[15%] top-[17%]", dealer_position: "left-[8%] top-[23%]"}
-  defp seat_layout(5), do: %{cards_position: "left-[11%] top-[65%]", dealer_position: "left-[5%] top-[68%]"}
+  defp seat_layout(1), do: %{cards_position: "left-[11%] top-[65%]", dealer_position: "left-[5%] top-[68%]"}
+  defp seat_layout(2), do: %{cards_position: "left-[15%] top-[17%]", dealer_position: "left-[8%] top-[23%]"}
+  defp seat_layout(3), do: %{cards_position: "left-[43%] top-[17%]", dealer_position: "left-[58%] top-[23%]"}
+  defp seat_layout(4), do: %{cards_position: "left-[69%] top-[17%]", dealer_position: "left-[86%] top-[23%]"}
+  defp seat_layout(5), do: %{cards_position: "left-[75%] top-[65%]", dealer_position: "left-[69%] top-[68%]"}
 
   defp position_label(nil), do: "unknown position"
   defp position_label(position), do: position |> String.replace("_", " ") |> String.capitalize()

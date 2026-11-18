@@ -10,15 +10,11 @@ defmodule ZoonkWeb.UploadSyncTests do
   import Mox
   import Phoenix.LiveViewTest
   import Zoonk.Fixtures.Content
-  import Zoonk.Fixtures.Storage
   import ZoonkWeb.TestHelpers.Upload
 
   alias Zoonk.Accounts
   alias Zoonk.Content
   alias Zoonk.Organizations
-  alias Zoonk.Repo
-  alias Zoonk.Storage.SchoolObject
-  alias Zoonk.Storage.StorageAPIMock
 
   setup :set_mox_global
   setup :verify_on_exit!
@@ -46,36 +42,20 @@ defmodule ZoonkWeb.UploadSyncTests do
       assert Organizations.get_school_by_slug!(school.slug).icon == uploaded_file_name()
     end
 
-    test "uploads avatar", %{conn: conn, user: user} do
-      mock_storage()
-
+    test "chooses and saves a preset avatar", %{conn: conn, user: user} do
       {:ok, lv, _html} = live(conn, ~p"/users/settings/avatar")
 
       assert user.avatar == nil
 
       assert has_element?(lv, ~s|li[aria-current=page] a:fl-icontains("profile")|)
       assert has_element?(lv, ~s|li[aria-current=page] a:fl-icontains("avatar")|)
-      assert_file_upload(lv, "user_avatar")
+      assert has_element?(lv, ~s|button[phx-value-avatar="/images/poker/suits/spade.png"]|)
+      refute has_element?(lv, "#upload-form-user_avatar")
 
-      assert Accounts.get_user!(user.id).avatar == uploaded_file_name()
-    end
+      lv |> element(~s|button[phx-value-avatar="/images/poker/suits/spade.png"]|) |> render_click()
 
-    test "removes the older avatar when uploading a new one", %{conn: conn, school: school, user: user} do
-      mock_storage()
-
-      expect(StorageAPIMock, :delete, fn _ -> {:ok, %{}} end)
-
-      old_file_name = "#{System.unique_integer()}.jpg"
-      school_object_fixture(%{school: school, key: old_file_name})
-
-      Accounts.update_user_settings(user, %{avatar: old_file_name})
-
-      {:ok, lv, _html} = live(conn, ~p"/users/settings/avatar")
-
-      assert_file_upload(lv, "user_avatar")
-
-      assert Accounts.get_user!(user.id).avatar == uploaded_file_name()
-      assert Repo.get_by(SchoolObject, key: old_file_name) == nil
+      assert Accounts.get_user!(user.id).avatar == "/images/poker/suits/spade.png"
+      assert render(lv) =~ "Selected"
     end
 
     test "uploads a cover image", %{conn: conn, course: course} do

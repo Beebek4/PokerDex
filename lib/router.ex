@@ -109,6 +109,7 @@ defmodule ZoonkWeb.Router do
         {Course, :mount_lesson}
       ] do
       live "/home", TrainerHome
+      live "/play", Play
       live "/practice", Practice
       live "/progress", Progress
       live "/review/:course_slug/:lesson_id/:step_id", Review

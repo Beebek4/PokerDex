@@ -30,10 +30,15 @@ defmodule ZoonkWeb.Components.Avatar do
 
   # Handle the case where the image is available.
   def avatar(%{src: src} = assigns) when is_binary(src) do
+    assigns = assign(assigns, :image_url, avatar_url(src))
+
     ~H"""
-    <img src={Storage.get_url(@src)} class={avatar_class(@size, @class)} alt={@alt} />
+    <img src={@image_url} class={avatar_class(@size, @class)} alt={@alt} />
     """
   end
+
+  defp avatar_url("/images/" <> _ = path), do: path
+  defp avatar_url(key), do: Storage.get_url(key)
 
   defp avatar_class(size, class) do
     [

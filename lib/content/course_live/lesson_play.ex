@@ -11,35 +11,54 @@ defmodule ZoonkWeb.Live.LessonPlay do
   alias Zoonk.Content.LessonStep
   alias Zoonk.Content.PokerScenario
   alias Zoonk.Content.StepOption
+  alias Zoonk.Repo
   alias Zoonk.Storage
+
+  @puzzle_course_prefix "holdem-puzzles-"
+  @puzzle_course_slugs ~w(holdem-puzzles-preflop holdem-puzzles-flop holdem-puzzles-turn holdem-puzzles-river holdem-puzzles-showdown)
 
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
     %{lesson: %Lesson{} = lesson, current_user: user} = socket.assigns
 
-    step_count = Content.count_lesson_steps(lesson.id)
-    pending_selection = Content.get_pending_lesson_selection(user.id, lesson.id)
+    puzzle_mode? = puzzle_course?(socket.assigns.course)
+    puzzle_candidates = if puzzle_mode?, do: puzzle_candidates(socket.assigns.course, user), else: []
+    pending_selection = if puzzle_mode?, do: nil, else: Content.get_pending_lesson_selection(user.id, lesson.id)
 
     {current_step, selected_option, saved_selection?} =
-      case pending_selection do
-        %{step: step, option: option} ->
-          step = %{step | poker_scenario: pending_selection.scenario_snapshot || step.poker_scenario}
-          {step, option, true}
+      cond do
+        puzzle_mode? and puzzle_candidates != [] ->
+          %{step: step} = Enum.random(puzzle_candidates)
+          {step, nil, false}
 
-        nil ->
+        pending_selection ->
+          step = %{pending_selection.step | poker_scenario: pending_selection.scenario_snapshot || pending_selection.step.poker_scenario}
+          {step, pending_selection.option, true}
+
+        true ->
           resume_order = Content.get_lesson_resume_order(user.id, lesson.id)
           {Content.get_next_step(lesson, resume_order), nil, false}
       end
 
+    current_lesson =
+      if puzzle_mode? and puzzle_candidates != [] do
+        Enum.find_value(puzzle_candidates, lesson, fn candidate -> if candidate.step.id == current_step.id, do: candidate.lesson end)
+      else
+        lesson
+      end
+
     socket =
       socket
-      |> assign(:page_title, lesson.name)
-      |> assign(:step_count, step_count)
+      |> assign(:page_title, if(puzzle_mode?, do: "Puzzles", else: lesson.name))
+      |> assign(:step_count, if(puzzle_mode?, do: length(puzzle_candidates), else: Content.count_lesson_steps(lesson.id)))
       |> assign(:current_step, current_step)
+      |> assign(:lesson, current_lesson)
       |> assign(:selected_option, selected_option)
       |> assign(:saved_selection, pending_selection)
       |> assign(:selection_saved?, saved_selection?)
       |> assign(:options, shuffle_options(current_step))
+      |> assign(:puzzle_mode?, puzzle_mode?)
+      |> assign(:puzzle_candidates, puzzle_candidates)
       |> assign(:lesson_start, DateTime.utc_now())
       |> assign(:step_start, DateTime.utc_now())
 
@@ -47,9 +66,62 @@ defmodule ZoonkWeb.Live.LessonPlay do
   end
 
   @impl Phoenix.LiveView
+  def handle_params(params, _uri, %{assigns: %{puzzle_mode?: true}} = socket) do
+    pool = if params["pool"] == "all", do: :all, else: :street
+    difficulty = puzzle_difficulty(params["difficulty"])
+
+    all_candidates =
+      if pool == :all do
+        puzzle_candidates_for_school(socket.assigns.school, socket.assigns.current_user)
+      else
+        puzzle_candidates(socket.assigns.course, socket.assigns.current_user)
+      end
+
+    filtered_candidates = filter_puzzle_candidates(all_candidates, difficulty)
+    candidates = if filtered_candidates == [], do: all_candidates, else: filtered_candidates
+
+    if candidates == [] do
+      {:noreply, socket}
+    else
+      {:noreply,
+       socket
+       |> assign(:puzzle_candidates, candidates)
+       |> assign_random_puzzle(candidates)}
+    end
+  end
+
+  def handle_params(_params, _uri, socket), do: {:noreply, socket}
+
+  @impl Phoenix.LiveView
+  def handle_event("choose-option", %{"id" => step_id, "option" => option_id}, socket) do
+    case {socket.assigns.puzzle_mode?, socket.assigns.current_step, Integer.parse(step_id), Integer.parse(option_id)} do
+      {true, %{id: current_step_id}, {current_step_id, ""}, {parsed_option_id, ""}} ->
+        choose_puzzle_option(parsed_option_id, socket)
+
+      _stale_or_invalid ->
+        {:noreply, socket}
+    end
+  end
+
+  def handle_event("choose-option", _params, socket), do: {:noreply, socket}
+
+  @impl Phoenix.LiveView
+  def handle_event("next-puzzle", %{"id" => step_id}, socket) do
+    case {socket.assigns.puzzle_mode?, socket.assigns.selected_option, socket.assigns.current_step, Integer.parse(step_id)} do
+      {true, %StepOption{}, %{id: current_step_id}, {current_step_id, ""}} ->
+        {:noreply, assign_random_puzzle(socket, socket.assigns.puzzle_candidates)}
+
+      _stale_or_not_answered ->
+        {:noreply, socket}
+    end
+  end
+
+  def handle_event("next-puzzle", _params, socket), do: {:noreply, socket}
+
+  @impl Phoenix.LiveView
   def handle_event("next", %{"step_id" => step_id} = params, socket) do
-    case {socket.assigns.current_step, Integer.parse(step_id)} do
-      {%{id: current_step_id}, {current_step_id, ""}} -> handle_next(params, socket)
+    case {socket.assigns.puzzle_mode?, socket.assigns.current_step, Integer.parse(step_id)} do
+      {false, %{id: current_step_id}, {current_step_id, ""}} -> handle_next(params, socket)
       _stale_or_completed -> {:noreply, socket}
     end
   end
@@ -110,6 +182,81 @@ defmodule ZoonkWeb.Live.LessonPlay do
         {:noreply, put_flash(socket, :error, dgettext("courses", "Unable to send answer"))}
     end
   end
+
+  defp choose_puzzle_option(option_id, %{assigns: %{selected_option: nil, current_step: step}} = socket) do
+    selected_option = get_option(step.options, option_id)
+
+    case selected_option && Content.add_user_selection(selection_attrs(socket, %{}, selected_option, nil, true)) do
+      {:ok, selection} ->
+        socket =
+          socket
+          |> maybe_play_sound_effect(selected_option.correct?)
+          |> assign(:selected_option, selected_option)
+          |> assign(:saved_selection, selection)
+          |> assign(:selection_saved?, true)
+
+        {:noreply, socket}
+
+      {:error, _} ->
+        {:noreply, put_flash(socket, :error, dgettext("courses", "Unable to send answer"))}
+
+      nil ->
+        {:noreply, socket}
+    end
+  end
+
+  defp choose_puzzle_option(_option_id, socket), do: {:noreply, socket}
+
+  defp assign_random_puzzle(socket, candidates) do
+    current_step = socket.assigns.current_step
+    other_candidates = Enum.reject(candidates, &(&1.step.id == current_step.id))
+    candidate = Enum.random(if(other_candidates == [], do: candidates, else: other_candidates))
+
+    socket
+    |> assign(:lesson, candidate.lesson)
+    |> assign(:current_step, candidate.step)
+    |> assign(:selected_option, nil)
+    |> assign(:saved_selection, nil)
+    |> assign(:selection_saved?, false)
+    |> assign(:options, shuffle_options(candidate.step))
+    |> assign(:step_start, DateTime.utc_now())
+  end
+
+  defp puzzle_candidates(course, user) do
+    course
+    |> Content.list_published_lessons(user)
+    |> puzzle_candidates_for_lessons()
+  end
+
+  defp puzzle_candidates_for_school(school, user) do
+    school
+    |> Content.list_public_courses_by_school(:en)
+    |> Enum.map(& &1.data)
+    |> Enum.filter(&(&1.slug in @puzzle_course_slugs))
+    |> Enum.flat_map(&puzzle_candidates(&1, user))
+  end
+
+  defp puzzle_candidates_for_lessons(lessons) do
+    Enum.flat_map(lessons, fn lesson ->
+      lesson
+      |> Content.list_lesson_steps()
+      |> Enum.filter(&(&1.kind == :quiz and is_map(&1.poker_scenario) and &1.options != []))
+      |> Enum.map(&%{lesson: lesson, step: Repo.preload(&1, suggested_courses: :course)})
+    end)
+  end
+
+  defp puzzle_difficulty("beginner"), do: :beginner
+  defp puzzle_difficulty("intermediate"), do: :intermediate
+  defp puzzle_difficulty("advanced"), do: :advanced
+  defp puzzle_difficulty(_difficulty), do: :any
+
+  defp filter_puzzle_candidates(candidates, :any), do: candidates
+
+  defp filter_puzzle_candidates(candidates, difficulty) do
+    Enum.filter(candidates, &(&1.lesson.difficulty == difficulty))
+  end
+
+  defp puzzle_course?(%{slug: slug}), do: is_binary(slug) and String.starts_with?(slug, @puzzle_course_prefix)
 
   defp handle_lesson_completed(socket, nil) do
     %{course: course, lesson: lesson, current_user: user, lesson_start: lesson_start} = socket.assigns

@@ -1,7 +1,72 @@
-<section class="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-  <p class="text-sm font-semibold uppercase tracking-wide text-cyan-800">Theory</p>
-  <h1 class="mt-2 text-3xl font-bold tracking-tight text-gray-950">Build your Hold’em foundations</h1>
-  <p class="mt-2 max-w-2xl text-gray-600">Learn the rules, read the board, and make better decisions one short lesson at a time.</p>
+<section class="mx-auto w-full max-w-6xl px-4 py-8 text-white sm:px-6 lg:px-8">
+  <p class="text-poker-gold text-sm font-semibold uppercase tracking-wide">Theory</p>
+  <h1 class="mt-2 text-3xl font-bold tracking-tight text-white">Learn poker one idea at a time</h1>
+  <p class="text-[#C7C1CF] mt-2 max-w-2xl">
+    Follow a learning path from the rules and decision basics through ranges, board reading, betting, and full-hand review. Lessons use six-handed cash examples with fictional chips; strategy depends on the situation.
+  </p>
 
-  <.course_list id="courses-list" courses={@streams.courses} />
+  <nav class="mt-6 flex flex-wrap gap-2" aria-label="Filter Theory by level">
+    <button
+      type="button"
+      phx-click="filter-level"
+      phx-value-level="all"
+      aria-pressed={@selected_level == "all"}
+      class={[
+        "rounded-full border px-4 py-2 text-sm font-semibold transition focus:outline-poker-gold focus:outline-2 focus:outline-offset-2",
+        @selected_level == "all" && "border-poker-gold bg-poker-gold text-[#2C1320]",
+        @selected_level != "all" && "border-white/20 bg-white/5 text-[#D8D2DF] hover:bg-white/10"
+      ]}
+    >
+      All levels
+    </button>
+    <button
+      :for={level <- @levels}
+      type="button"
+      phx-click="filter-level"
+      phx-value-level={level.key}
+      aria-pressed={@selected_level == Atom.to_string(level.key)}
+      class={[
+        "rounded-full border px-4 py-2 text-sm font-semibold transition focus:outline-poker-gold focus:outline-2 focus:outline-offset-2",
+        @selected_level == Atom.to_string(level.key) && "border-poker-gold bg-poker-gold text-[#2C1320]",
+        @selected_level != Atom.to_string(level.key) && "border-white/20 bg-white/5 text-[#D8D2DF] hover:bg-white/10"
+      ]}
+    >
+      <%= level.label %>
+    </button>
+  </nav>
+
+  <div id="theory-modules" class="mt-8 space-y-10">
+    <section
+      :for={section <- @sections}
+      :if={section.modules != [] and (@selected_level == "all" or Atom.to_string(section.key) == @selected_level)}
+      aria-labelledby={"level-#{section.key}"}
+    >
+      <h2 id={"level-#{section.key}"} class="text-xl font-bold text-white"><%= section.title %></h2>
+      <div :if={section.key == :beginner} class="mt-4 space-y-3">
+        <details
+          :for={group <- @beginner_groups}
+          open={group.key == :start_here}
+          class="group border-white/10 bg-[#351B2B] shadow-black/20 overflow-hidden rounded-2xl border shadow-xl"
+        >
+          <summary class="flex cursor-pointer list-none items-center justify-between gap-4 p-4 focus-visible:outline-inset focus-visible:outline-poker-gold focus-visible:outline focus-visible:outline-2 sm:px-5">
+            <span>
+              <span class="block font-semibold text-white"><%= group.title %></span>
+              <span class="text-[#A7ADC6] mt-1 block text-sm"><%= group.description %></span>
+            </span>
+            <span class="text-[#A7ADC6] flex shrink-0 items-center gap-2 text-sm font-medium">
+              <%= length(group.modules) %> <%= if length(group.modules) == 1, do: "topic", else: "topics" %>
+              <.icon name="tabler-chevron-down" class="h-4 w-4 transition-transform group-open:rotate-180" />
+            </span>
+          </summary>
+          <div class="border-white/10 bg-[#2C1320]/70 grid grid-cols-1 gap-4 border-t p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-3">
+            <.module_card :for={module <- group.modules} module={module} />
+          </div>
+        </details>
+      </div>
+
+      <div :if={section.key != :beginner} class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <.module_card :for={module <- section.modules} module={module} />
+      </div>
+    </section>
+  </div>
 </section>

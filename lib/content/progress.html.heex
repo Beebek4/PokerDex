@@ -1,57 +1,89 @@
-<section class="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
-  <p class="text-sm font-semibold uppercase tracking-wide text-cyan-800">Progress</p>
-  <h1 class="mt-2 text-3xl font-bold tracking-tight text-gray-950">Your practice so far</h1>
-  <p class="mt-2 text-gray-600"><%= @attempt_count %> scenario answers saved.</p>
+<section class="border-[#5F4B66] bg-[#2C1320] relative mx-auto my-6 w-full max-w-4xl overflow-hidden rounded-3xl border px-4 py-7 shadow-2xl sm:px-8 sm:py-9">
+  <div aria-hidden="true" class="pointer-events-none absolute inset-0 opacity-40" style="background: radial-gradient(ellipse at 50% -10%, #5F4B66 0%, transparent 58%)"></div>
 
-  <section :if={@due_reviews != []} class="mt-8 rounded-3xl border border-amber-200 bg-amber-50 p-5 sm:p-6">
-    <p class="text-sm font-semibold uppercase tracking-wide text-amber-900">Ready for another try</p>
-    <h2 class="mt-1 text-xl font-bold text-amber-950">Review a skill you missed</h2>
-    <div class="mt-4 grid gap-3 md:grid-cols-2">
-      <article :for={review <- @due_reviews} class="rounded-2xl border border-amber-200 bg-white p-4">
-        <h3 class="font-semibold text-gray-950"><%= review.skill |> String.replace(".", " ") |> String.capitalize() %></h3>
-        <p class="mt-1 text-sm text-gray-600"><%= review.reason %></p>
-        <p class="mt-1 text-sm text-gray-600">A different authored hand is ready in <%= review.lesson.name %>.</p>
-        <.link_button navigate={~p"/review/#{review.course.slug}/#{review.lesson.id}/#{review.step.id}"} color={:primary} class="mt-4">Try a new hand</.link_button>
-      </article>
-    </div>
-    <p class="mt-4 text-xs text-amber-950">Some practice scenarios are still marked draft while they await poker review.</p>
-  </section>
-
-  <div :if={@skills == []} class="mt-8 rounded-2xl border border-gray-200 bg-white p-6">
-    <h2 class="text-lg font-semibold text-gray-950">Your first practice is ready</h2>
-    <p class="mt-2 text-sm text-gray-600">Complete a lesson with a hand question and your practice summary will appear here.</p>
-    <.link_button navigate={~p"/practice"} color={:primary} class="mt-5">Choose a puzzle set</.link_button>
-  </div>
-
-  <div :if={@skills != []} class="mt-8 space-y-4">
-    <article :for={{skill, stats} <- @skills} class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-      <h2 class="font-semibold text-gray-950"><%= skill |> String.replace(".", " ") |> String.capitalize() %></h2>
-      <div class="mt-3 grid gap-3 sm:grid-cols-2">
-        <div :if={stats.action_count > 0} class="rounded-xl bg-cyan-50 p-4">
-          <p class="text-sm text-cyan-950">Action decisions</p>
-          <p class="mt-1 text-xl font-bold text-cyan-950">
-            <%= Float.round(stats.action_score / stats.action_count, 1) %><span class="text-sm font-medium"> / 100 average rubric score</span>
-          </p>
-          <p class="mt-1 text-xs text-cyan-900"><%= stats.action_count %> attempts</p>
-          <p :if={stats.action_recent != []} class="mt-1 text-xs text-cyan-900">
-            Recent <%= length(stats.action_recent) %>: <%= Float.round(Enum.sum(stats.action_recent) / length(stats.action_recent), 1) %>/100 average rubric score
-          </p>
-        </div>
-        <div :if={stats.objective_count > 0} class="rounded-xl bg-indigo-50 p-4">
-          <p class="text-sm text-indigo-950">Hand-ranking questions</p>
-          <p class="mt-1 text-xl font-bold text-indigo-950"><%= stats.objective_correct %> / <%= stats.objective_count %><span class="text-sm font-medium"> correct</span></p>
-          <p class="mt-1 text-xs text-indigo-900">Objective card calculation</p>
-          <p :if={stats.objective_recent != []} class="mt-1 text-xs text-indigo-900">
-            Recent <%= length(stats.objective_recent) %>: <%= Enum.sum(Enum.map(stats.objective_recent, &elem(&1, 0))) %> / <%= Enum.sum(
-              Enum.map(stats.objective_recent, &elem(&1, 1))
-            ) %> correct
-          </p>
-        </div>
+  <div class="relative z-10">
+    <header class="mb-7 flex items-center gap-3">
+      <span aria-hidden="true" class="border-[#A7ADC6]/60 bg-[#56667A]/50 flex h-11 w-11 items-center justify-center rounded-full border text-2xl text-white shadow-inner">
+        ♠
+      </span>
+      <div>
+        <p class="tracking-[0.2em] text-[#A7ADC6] text-xs font-bold uppercase">PokerDex</p>
+        <h1 class="text-2xl font-bold tracking-tight text-white sm:text-3xl">Progress</h1>
       </div>
-    </article>
-  </div>
+    </header>
 
-  <p class="mt-6 max-w-3xl text-sm leading-6 text-gray-500">
-    These are learning activity summaries. Strategy scores reflect the authored scenario assumptions and are not a validated poker rating or a promise of results.
-  </p>
+    <div class="grid items-start gap-4 sm:grid-cols-2">
+      <section
+        id="play-progress"
+        class="border-[#8797AF]/60 from-[#5F4B66] to-[#2C1320] shadow-black/20 rounded-2xl border bg-gradient-to-br p-5 shadow-xl sm:col-span-2 sm:flex sm:items-center sm:justify-between sm:gap-6 sm:p-6"
+      >
+        <div class="flex items-start gap-4">
+          <span aria-hidden="true" class="border-white/40 bg-[#2C1320]/30 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-2xl text-white">♦</span>
+          <div>
+            <p class="tracking-[0.16em] text-[#A7ADC6] text-xs font-bold uppercase">PokerDex</p>
+            <h2 class="mt-1 text-xl font-bold text-white">Play</h2>
+            <p class="text-[#E2DCE5] mt-1 max-w-xl text-sm leading-6">Bot play is being introduced. Your table stats will appear here when full bot games are available.</p>
+          </div>
+        </div>
+        <.link
+          navigate={~p"/play"}
+          class="mt-4 inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-poker-gold px-4 py-2 text-sm font-bold text-[#2C1320] transition hover:bg-poker-gold-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-poker-gold sm:mt-0"
+        >
+          Open Play <.icon name="tabler-arrow-right" class="h-4 w-4" />
+        </.link>
+      </section>
+
+      <section id="puzzles-progress" class="border-[#8797AF]/70 bg-[#56667A] shadow-black/20 rounded-2xl border p-5 shadow-xl">
+        <div class="flex items-center justify-between gap-3">
+          <h2 class="text-xl font-bold text-white">Puzzles</h2>
+          <span aria-hidden="true" class="border-white/40 bg-[#2C1320]/30 flex h-9 w-9 items-center justify-center rounded-full border text-lg text-white">♣</span>
+        </div>
+        <div class="mt-4 grid grid-cols-2 gap-3">
+          <div class="border-white/15 bg-[#2C1320]/70 rounded-xl border p-3">
+            <p class="text-[#A7ADC6] text-sm">Accuracy</p>
+            <p class="mt-1 text-2xl font-bold text-white"><%= @puzzle_progress.accuracy_percentage %>%</p>
+          </div>
+          <div class="border-white/15 bg-[#2C1320]/70 rounded-xl border p-3">
+            <p class="text-[#A7ADC6] text-sm">Completed</p>
+            <p class="mt-1 text-2xl font-bold text-white"><%= @puzzle_progress.completed_count %></p>
+          </div>
+        </div>
+        <details class="mt-4 text-sm">
+          <summary class="cursor-pointer font-semibold text-white marker:text-[#A7ADC6]">By street</summary>
+          <ul class="divide-white/10 mt-2 divide-y">
+            <li :for={street <- @puzzle_progress.streets} class="flex items-center justify-between gap-3 py-2">
+              <span class="text-[#A7ADC6]"><%= street.title %> · <%= street.completed_count %> completed</span>
+              <span class="font-semibold text-white"><%= street.accuracy_percentage %>%</span>
+            </li>
+          </ul>
+        </details>
+      </section>
+
+      <section id="theory-progress" class="border-[#8797AF]/70 bg-[#5F4B66] shadow-black/20 rounded-2xl border p-5 shadow-xl">
+        <div class="flex items-center justify-between gap-3">
+          <h2 class="text-xl font-bold text-white">Theory</h2>
+          <span aria-hidden="true" class="border-white/40 bg-[#2C1320]/30 flex h-9 w-9 items-center justify-center rounded-full border text-lg text-white">♥</span>
+        </div>
+        <div class="mt-4 grid grid-cols-2 gap-3">
+          <div class="border-white/15 bg-[#2C1320]/70 rounded-xl border p-3">
+            <p class="text-[#A7ADC6] text-sm">Lessons complete</p>
+            <p class="mt-1 text-2xl font-bold text-white"><%= @theory_progress.overall.lessons_percentage %>%</p>
+          </div>
+          <div class="border-white/15 bg-[#2C1320]/70 rounded-xl border p-3">
+            <p class="text-[#A7ADC6] text-sm">Answer accuracy</p>
+            <p class="mt-1 text-2xl font-bold text-white"><%= @theory_progress.overall.accuracy_percentage %>%</p>
+          </div>
+        </div>
+        <details :if={@theory_progress.difficulties != []} class="mt-4 text-sm">
+          <summary class="cursor-pointer font-semibold text-white marker:text-[#A7ADC6]">By difficulty</summary>
+          <ul class="divide-white/10 mt-2 divide-y">
+            <li :for={difficulty <- @theory_progress.difficulties} class="flex items-center justify-between gap-3 py-2">
+              <span class="text-[#A7ADC6]"><%= difficulty.title %> · lessons <%= difficulty.stats.lessons_percentage %>%</span>
+              <span class="font-semibold text-white"><%= difficulty.stats.accuracy_percentage %>% accuracy</span>
+            </li>
+          </ul>
+        </details>
+      </section>
+    </div>
+  </div>
 </section>

@@ -35,17 +35,39 @@ defmodule ZoonkWeb.TrainerJourneyLiveTest do
     assert has_element?(lv, "a[href='/progress']", "Progress")
   end
 
-  test "Practice lists available tracks", %{conn: conn, school: school} do
-    %{course: course} = add_track(school, "holdem-preflop", "Preflop fundamentals")
+  test "Puzzles lets the learner choose a street and play a random lesson", %{conn: conn, school: school} do
+    %{course: course} = add_track(school, "holdem-puzzles-preflop", "Preflop puzzles")
+
+    intermediate_lesson =
+      lesson_fixture(%{
+        course_id: course.id,
+        name: "Intermediate hand",
+        description: "A more involved preflop spot.",
+        difficulty: :intermediate,
+        order: 2
+      })
 
     {:ok, lv, _html} = live(conn, ~p"/practice")
 
-    assert has_element?(lv, "h1", "Just Play")
-    assert has_element?(lv, "h2", "Preflop Fundamentals")
-    assert has_element?(lv, "a[href='/c/#{course.slug}']", "Open")
+    assert has_element?(lv, "h1", "Puzzles")
+    assert has_element?(lv, "p", "Just Play")
+    assert has_element?(lv, "h2", "Jump into a puzzle")
+    assert has_element?(lv, "#puzzle-difficulty")
+    assert has_element?(lv, "a[href*='pool=all']", "Play a hand")
+    assert has_element?(lv, "#puzzles-preflop", "Play")
+    assert has_element?(lv, "#puzzles-flop", "Flop")
+    assert has_element?(lv, "#puzzles-turn", "Coming soon")
+    assert has_element?(lv, "#puzzles-river", "Coming soon")
+    assert has_element?(lv, "#puzzles-showdown", "Showdown")
+
+    lv |> element("#puzzle-difficulty") |> render_change(%{"difficulty" => "intermediate"})
+    refute has_element?(lv, "#puzzles-preflop", "available")
+    assert has_element?(lv, "a[href*='pool=all'][href*='difficulty=intermediate']", "Play a hand")
+    lv |> element("#puzzles-preflop button", "Play") |> render_click()
+    assert_redirect(lv, ~p"/c/#{course.slug}/#{intermediate_lesson.id}?difficulty=intermediate")
   end
 
-  test "Progress separates action rubric scores from objective hand-ranking accuracy", %{conn: conn, school: school, user: user} do
+  test "Progress shows puzzle accuracy, completions, and a street breakdown", %{conn: conn, school: school, user: user} do
     %{lesson: lesson} = add_track(school, "holdem-flop-decisions", "Flop decisions")
     question = HoldemCurriculum.tracks() |> hd() |> Map.fetch!(:lessons) |> hd() |> Map.fetch!(:questions) |> Enum.at(1)
     scenario = question.poker_scenario
@@ -66,10 +88,46 @@ defmodule ZoonkWeb.TrainerJourneyLiveTest do
 
     {:ok, lv, _html} = live(conn, ~p"/progress")
 
-    assert has_element?(lv, "h1", "Your practice so far")
-    assert has_element?(lv, "p", "Action decisions")
-    assert has_element?(lv, "p", "70.0 / 100 average rubric score")
-    refute has_element?(lv, "p", "0 / 1 correct")
+    assert has_element?(lv, "h1", "Progress")
+    assert has_element?(lv, "h2", "Puzzles")
+    assert has_element?(lv, "#puzzles-progress", "100%")
+    assert has_element?(lv, "#puzzles-progress", "1")
+    assert has_element?(lv, "#puzzles-progress summary", "By street")
+    assert has_element?(lv, "#puzzles-progress", "#{String.capitalize(scenario["street"])} · 1 completed")
+  end
+
+  test "Theory progress shows completion, accuracy, and a difficulty breakdown", %{conn: conn, school: school, user: user} do
+    course =
+      course_fixture(%{
+        school_id: school.id,
+        slug: "theory-module-00-foundations",
+        name: "Poker foundations",
+        level: :beginner
+      })
+
+    completed_lesson = lesson_fixture(%{course_id: course.id, name: "Hand rankings", order: 1})
+    lesson_fixture(%{course_id: course.id, name: "Using the board", order: 2})
+
+    step = lesson_step_fixture(%{lesson_id: completed_lesson.id, content: "Question", kind: :quiz})
+
+    {:ok, _selection} =
+      Content.add_user_selection(%{
+        user_id: user.id,
+        lesson_id: completed_lesson.id,
+        step_id: step.id,
+        duration: 5,
+        correct: 1,
+        total: 1
+      })
+
+    {:ok, _user_lesson} = Content.mark_lesson_as_completed(user.id, completed_lesson.id, 60)
+
+    {:ok, lv, _html} = live(conn, ~p"/progress")
+
+    assert has_element?(lv, "#theory-progress", "50%")
+    assert has_element?(lv, "#theory-progress", "100%")
+    assert has_element?(lv, "#theory-progress summary", "By difficulty")
+    assert has_element?(lv, "#theory-progress", "Beginner · lessons 50%")
   end
 
   test "missed skills open a different authored review scenario and restore its answer after refresh", %{conn: conn, school: school, user: user} do
@@ -98,10 +156,6 @@ defmodule ZoonkWeb.TrainerJourneyLiveTest do
         scenario_version: source_scenario["version"],
         scenario_snapshot: source_scenario
       })
-
-    {:ok, progress, _html} = live(conn, ~p"/progress")
-    assert has_element?(progress, "h2", "Review a skill you missed")
-    assert has_element?(progress, "p", "Your latest action score for this skill was #{source_option.score}/100.")
 
     review_path = ~p"/review/#{course.slug}/#{lesson.id}/#{alternate_step.id}"
     {:ok, review, _html} = live(conn, review_path)

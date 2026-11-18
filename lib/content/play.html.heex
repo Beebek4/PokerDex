@@ -1,0 +1,83 @@
+<section class="mx-auto w-full max-w-6xl px-4 py-6 text-white sm:px-6 sm:py-10 lg:px-8">
+  <div class="grid items-center gap-7 lg:grid-cols-[1fr_0.9fr] lg:gap-12">
+    <div>
+      <p class="tracking-[0.2em] text-poker-gold text-xs font-bold uppercase">PokerDex · Play</p>
+      <h1 class="mt-3 max-w-2xl text-3xl font-extrabold tracking-tight text-white sm:text-5xl">Take your decisions to the table.</h1>
+      <p class="text-[#E2DCE5] mt-4 max-w-xl text-base leading-7 sm:text-lg">
+        Bot games are the next step for PokerDex. This is where you’ll play complete Hold’em hands against computer opponents, with room to think through each decision.
+      </p>
+
+      <div class="mt-6 flex flex-wrap items-center gap-3">
+        <span class="border-poker-gold/40 bg-poker-gold/10 text-poker-gold inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-semibold">
+          <span class="bg-poker-gold h-2 w-2 rounded-full" aria-hidden="true"></span> Bot table in development
+        </span>
+      </div>
+
+      <.link
+        navigate={~p"/practice"}
+        class="mt-7 inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-poker-gold px-5 py-3 text-sm font-bold text-[#2C1320] shadow-md shadow-black/20 transition hover:bg-poker-gold-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-poker-gold active:scale-[0.98]"
+      >
+        Practice a puzzle while you wait <.icon name="tabler-arrow-right" class="h-4 w-4" />
+      </.link>
+    </div>
+
+    <div class="max-w-[30rem] rounded-[2rem] border-white/10 from-[#5F4B66] to-[#351B2B] shadow-black/30 relative mx-auto w-full overflow-hidden border bg-gradient-to-br p-3 shadow-2xl sm:p-5">
+      <div class="text-[#E2DCE5] mb-2 flex items-center justify-between px-1 text-xs font-semibold uppercase tracking-wider">
+        <span>Table preview</span>
+        <span class="bg-[#2C1320]/70 text-poker-gold rounded-full px-2.5 py-1">Play money</span>
+      </div>
+      <div class="aspect-square max-w-[26rem] relative mx-auto w-full">
+        <img
+          src={~p"/images/poker/pokertable-removebg-preview.png"}
+          alt="Illustration of a Hold’em table with empty community-card slots"
+          class="absolute inset-0 h-full w-full object-contain"
+        />
+
+        <div class="left-[15%] top-[26%] w-[18%] absolute -rotate-12" aria-hidden="true">
+          <img src={~p"/images/poker/opp_cards.png"} alt="" class="h-full w-full object-contain" />
+        </div>
+        <div class="right-[15%] top-[26%] w-[18%] absolute rotate-12" aria-hidden="true">
+          <img src={~p"/images/poker/opp_cards.png"} alt="" class="h-full w-full object-contain" />
+        </div>
+
+        <span class="left-[9%] top-[45%] border-white/20 bg-[#2C1320]/80 text-[10px] absolute rounded-full border px-2.5 py-1 font-bold uppercase tracking-wide text-white sm:text-xs">
+          Bot
+        </span>
+        <span class="right-[9%] top-[45%] border-white/20 bg-[#2C1320]/80 text-[10px] absolute rounded-full border px-2.5 py-1 font-bold uppercase tracking-wide text-white sm:text-xs">
+          Bot
+        </span>
+        <span class="bottom-[12%] border-poker-gold/60 bg-[#2C1320]/90 text-[10px] text-poker-gold absolute left-1/2 -translate-x-1/2 rounded-full border px-3 py-1 font-bold uppercase tracking-wide sm:text-xs">
+          You
+        </span>
+      </div>
+      <p class="text-[#E2DCE5] px-1 pb-1 text-center text-xs leading-5">A preview of the table. Full bot-controlled hands are not playable yet.</p>
+    </div>
+  </div>
+
+  <section class="mt-10 sm:mt-14" aria-labelledby="play-first-steps">
+    <div class="mb-4">
+      <p class="tracking-[0.18em] text-poker-gold text-xs font-bold uppercase">Built in stages</p>
+      <h2 id="play-first-steps" class="mt-1 text-xl font-bold text-white sm:text-2xl">What bot play will add</h2>
+    </div>
+
+    <div class="grid gap-3 sm:grid-cols-3 sm:gap-4">
+      <article class="border-white/10 bg-[#56667A] rounded-2xl border p-4 sm:p-5">
+        <span class="bg-[#2C1320]/60 text-poker-gold flex h-9 w-9 items-center justify-center rounded-xl"><.icon name="tabler-cards" class="h-5 w-5" /></span>
+        <h3 class="mt-3 font-bold text-white">Play full hands</h3>
+        <p class="text-[#F2F1F6] mt-1 text-sm leading-6">Follow a hand from your private cards through the river and showdown.</p>
+      </article>
+
+      <article class="border-white/10 bg-[#56667A] rounded-2xl border p-4 sm:p-5">
+        <span class="bg-[#2C1320]/60 text-poker-gold flex h-9 w-9 items-center justify-center rounded-xl"><.icon name="tabler-users" class="h-5 w-5" /></span>
+        <h3 class="mt-3 font-bold text-white">Face bot opponents</h3>
+        <p class="text-[#F2F1F6] mt-1 text-sm leading-6">Start with simple, understandable opponents before adding more varied play styles.</p>
+      </article>
+
+      <article class="border-white/10 bg-[#56667A] rounded-2xl border p-4 sm:p-5">
+        <span class="bg-[#2C1320]/60 text-poker-gold flex h-9 w-9 items-center justify-center rounded-xl"><.icon name="tabler-bulb" class="h-5 w-5" /></span>
+        <h3 class="mt-3 font-bold text-white">Review your decisions</h3>
+        <p class="text-[#F2F1F6] mt-1 text-sm leading-6">Use hand reviews to connect table decisions with the ideas in Theory and Puzzles.</p>
+      </article>
+    </div>
+  </section>
+</section>

@@ -17,6 +17,8 @@ defmodule Zoonk.Content.Course do
 
   schema "courses" do
     field :cover, :string
+    field :curriculum_stage, Ecto.Enum, values: [:fundamentals, :competency, :deep_dive, :mastery]
+    field :curriculum_street, Ecto.Enum, values: [:preflop, :flop, :turn, :river, :showdown]
     field :description, :string
     field :language, Ecto.Enum, values: Translate.supported_locales()
     field :level, Ecto.Enum, values: CourseUtils.level_keys(), default: :beginner
@@ -37,7 +39,7 @@ defmodule Zoonk.Content.Course do
   @spec changeset(Ecto.Schema.t(), map()) :: Ecto.Changeset.t()
   def changeset(course, attrs) do
     course
-    |> cast(attrs, [:cover, :description, :language, :level, :name, :public?, :published?, :school_id, :slug])
+    |> cast(attrs, [:cover, :curriculum_stage, :curriculum_street, :description, :language, :level, :name, :public?, :published?, :school_id, :slug])
     |> validate_required([:description, :language, :name, :school_id, :slug])
     |> validate_slug(:slug)
     |> unsafe_validate_unique([:slug, :school_id], Zoonk.Repo)
