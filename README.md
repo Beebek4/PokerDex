@@ -5,8 +5,8 @@ PokerDex is a mobile-friendly Texas Hold’em learning app. It combines short th
 ## Current MVP
 
 - Guest onboarding, with optional account settings.
-- Theory courses and lessons for Hold’em rules, hand reading, preflop fundamentals, and flop decisions.
-- Poker scenarios with illustrated cards, table position, pot and stack context, and answer explanations.
+- Theory lessons that teach Hold’em concepts with clear explanations, examples, and enough text to build understanding.
+- Puzzles that foreground the board, table position, and decision, with minimal on-screen text and a concise explanation of why after the answer.
 - Saved lesson progress, per-skill practice summaries, and review questions.
 - A responsive interface designed for phone browsers as well as desktop.
 
@@ -60,7 +60,7 @@ The school and course foundation is still present because the learner routes, co
 ## Next product steps
 
 1. Review the draft strategic answers with a poker-knowledgeable reviewer.
-2. Separate sequential Theory teaching from standalone Puzzles practice; the MVP currently reuses the same authored lessons.
+2. Give Theory and Puzzles distinct experiences: teach concepts in sequence in Theory; keep Puzzles visual and focused on reading board texture and position, then explain the reasoning after the choice. They may reuse the current authored scenario pool at first.
 3. Add a constrained, reproducible puzzle generator only after its templates and rule checks are reviewed.
 4. Check accessibility, phone layouts, and data handling before inviting external learners.
 

@@ -106,12 +106,13 @@ The authored content set should include a curated Daily Hand (one to three decis
 2. Map the five destinations to existing LiveViews/components: Home, Learn (curriculum map), Practice, Progress, and Profile/Settings.
 3. Make one next action prominent on Home: resume an in-progress lesson, else today’s curated hand, else due review, else the next lesson.
 4. Build a poker scenario screen that presents all relevant context before the decision and never reveals future cards early.
-5. Show immediate feedback after an answer, including the score label, scenario evidence, main rationale, alternatives, and takeaway.
-6. End lessons and sessions with a factual summary and a single next action.
+5. Keep Theory and Puzzles visually and pedagogically distinct. Theory teaches concepts in sequence with definitions, explanation, and worked examples. Puzzles minimize instructional copy before the decision and foreground the board texture, position, and action; after the learner answers, explain why the decision fits the spot.
+6. Show immediate puzzle feedback after an answer, including the score label, scenario evidence, main rationale, alternatives, and takeaway.
+7. End lessons and sessions with a factual summary and a single next action.
 
 **Done when:** a new learner can start without unnecessary setup, complete a short lesson, understand the feedback, and find the next step.
 
-**Progress:** Implemented the first learner journey. New visitors choose an experience level and optional goal, then start as a guest. Home prioritizes an in-progress lesson, due review, or next lesson; Puzzles, Theory, Progress, and Profile are in the primary navigation. Poker lessons show structured table context and only cards available at that point. Answer feedback separates authored rubric scores from binary hand-ranking accuracy, explains the rationale and alternatives, and lesson completion provides one next action. Step 6 adds saved review and per-skill progress. A curated daily hand remains future work; authored rubrics remain draft until human poker review, and runtime randomized puzzles remain a later phase.
+**Progress:** Implemented the first learner journey. New visitors choose an experience level and optional goal, then start as a guest. Home prioritizes an in-progress lesson, due review, or next lesson; Puzzles, Theory, Progress, and Profile are in the primary navigation. Poker lessons show structured table context and only cards available at that point. Answer feedback separates authored rubric scores from binary hand-ranking accuracy, explains the rationale and alternatives, and lesson completion provides one next action. Step 6 adds saved review and per-skill progress. The current MVP reuses authored lessons across Theory and Puzzles; the next UI refinement should give Theory a teaching-first flow and Puzzles a board-and-position-first flow with brief post-answer reasoning. A curated daily hand remains future work; authored rubrics remain draft until human poker review, and runtime randomized puzzles remain a later phase.
 
 ### Step 6 — Save progress and implement learning measures
 
