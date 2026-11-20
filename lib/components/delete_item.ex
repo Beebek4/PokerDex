@@ -8,13 +8,18 @@ defmodule ZoonkWeb.Components.DeleteItem do
 
   attr :id, :string, required: true
   attr :name, :string, required: true
+  attr :theme, :atom, default: :default, values: [:default, :poker]
 
   @impl Phoenix.LiveComponent
   def render(assigns) do
     ~H"""
     <form phx-submit="delete" phx-target={@myself} id="delete-form">
-      <div class="flex flex-wrap items-center gap-2 bg-gray-50 p-4 sm:flex-nowrap sm:px-6 lg:px-8">
-        <h1 class="text-base font-semibold leading-7 text-gray-900"><%= gettext("Delete") %></h1>
+      <div class={[
+        "flex flex-wrap items-center gap-2 p-4 sm:flex-nowrap sm:px-6 lg:px-8",
+        @theme == :poker && "border-white/10 bg-[#5F4B66] border-b text-white",
+        @theme != :poker && "bg-gray-50"
+      ]}>
+        <h1 class={["text-base font-semibold leading-7", @theme == :poker && "text-white", @theme != :poker && "text-gray-900"]}><%= gettext("Delete") %></h1>
 
         <div class="ml-auto">
           <.button type="submit" icon="tabler-trash-x" color={:alert} phx-disable-with={gettext("Deleting...")}>
@@ -23,8 +28,8 @@ defmodule ZoonkWeb.Components.DeleteItem do
         </div>
       </div>
 
-      <div class="container">
-        <p class="pb-4 text-sm text-gray-600">
+      <div class={["container", @theme == :poker && "text-white"]}>
+        <p class={["pb-4 text-sm", @theme == :poker && "text-[#E2E6EF]", @theme != :poker && "text-gray-600"]}>
           <%= dgettext("orgs", "Deleting this item will remove all of its content. This action cannot be undone.") %>
         </p>
 

@@ -31,7 +31,6 @@ defmodule ZoonkWeb.DashboardCourseEditLiveTest do
 
     test "the information menu is active", %{conn: conn, course: course} do
       {:ok, lv, _html} = live(conn, ~p"/dashboard/c/#{course.slug}/edit/settings")
-      assert has_element?(lv, ~s|li[aria-current=page] a:fl-icontains("manage courses")|)
       assert has_element?(lv, ~s|li[aria-current=page] a:fl-icontains("settings")|)
     end
   end
@@ -114,7 +113,6 @@ defmodule ZoonkWeb.DashboardCourseEditLiveTest do
     test "deletes the course", %{conn: conn, school: school, course: course} do
       {:ok, lv, _html} = live(conn, ~p"/dashboard/c/#{course.slug}/edit/delete")
 
-      assert has_element?(lv, ~s|li[aria-current="page"] a:fl-icontains("manage courses")|)
       assert has_element?(lv, ~s|li[aria-current="page"] a:fl-icontains("delete")|)
 
       lv |> form("#delete-form", %{confirmation: "CONFIRM"}) |> render_submit()

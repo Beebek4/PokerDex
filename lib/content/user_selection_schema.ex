@@ -42,6 +42,11 @@ defmodule Zoonk.Content.UserSelection do
     field :answer, {:array, :string}
     field :correct, :integer
     field :total, :integer
+    field :score, :integer
+    field :scenario_version, :integer
+    field :scenario_snapshot, :map
+    field :acknowledged?, :boolean, default: true
+    field :activity_type, :string, default: "lesson"
 
     belongs_to :user, User
     belongs_to :lesson, Lesson
@@ -55,9 +60,25 @@ defmodule Zoonk.Content.UserSelection do
   @spec changeset(Ecto.Schema.t(), map()) :: Ecto.Changeset.t()
   def changeset(user_selection, attrs \\ %{}) do
     user_selection
-    |> cast(attrs, [:answer, :correct, :total, :duration, :user_id, :option_id, :lesson_id, :step_id])
+    |> cast(attrs, [
+      :answer,
+      :correct,
+      :total,
+      :duration,
+      :score,
+      :scenario_version,
+      :scenario_snapshot,
+      :acknowledged?,
+      :activity_type,
+      :user_id,
+      :option_id,
+      :lesson_id,
+      :step_id
+    ])
     |> validate_required([:duration, :correct, :total, :user_id, :lesson_id, :step_id])
     |> validate_correct_total()
+    |> validate_inclusion(:activity_type, ~w(lesson review))
+    |> validate_scenario_attempt()
   end
 
   # We need to ensure that the `correct` value is not greater than the `total` value.
@@ -72,4 +93,35 @@ defmodule Zoonk.Content.UserSelection do
   end
 
   defp validate_correct_total(changeset, _correct, _total), do: changeset
+
+  defp validate_scenario_attempt(changeset) do
+    score = get_field(changeset, :score)
+    version = get_field(changeset, :scenario_version)
+    snapshot = get_field(changeset, :scenario_snapshot)
+
+    changeset =
+      if is_nil(score) do
+        changeset
+      else
+        validate_number(changeset, :score, greater_than_or_equal_to: 0, less_than_or_equal_to: 100)
+      end
+
+    changeset =
+      if is_nil(version) do
+        changeset
+      else
+        validate_number(changeset, :scenario_version, greater_than: 0)
+      end
+
+    case {score, version, snapshot} do
+      {nil, nil, nil} ->
+        changeset
+
+      {score, version, snapshot} when is_integer(score) and is_integer(version) and is_map(snapshot) ->
+        changeset
+
+      _ ->
+        add_error(changeset, :score, "score, scenario version, and scenario snapshot must be saved together")
+    end
+  end
 end

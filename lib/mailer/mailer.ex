@@ -38,9 +38,10 @@ defmodule Zoonk.Mailer do
     end
   end
 
+  defp get_school_name(%School{school_id: nil}), do: "PokerDex"
   defp get_school_name(%School{name: name}), do: name
-  defp get_school_name(_school), do: "Zoonk"
+  defp get_school_name(_school), do: "PokerDex"
 
   defp get_school_email(%School{email: email}), do: email
-  defp get_school_email(_school), do: "noreply@zoonk.org"
+  defp get_school_email(_school), do: "noreply@pokerdex.example"
 end

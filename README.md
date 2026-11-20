@@ -1,148 +1,77 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://github.com/zoonk/.github/assets/4393133/3a24c5e9-dc8e-4491-9aeb-95dd6f7283c8">
-  <source media="(prefers-color-scheme: light)" srcset="https://github.com/zoonk/.github/assets/4393133/ddbb2208-feac-4a58-adac-f769cff4dc7f">
-  <img alt="Zoonk Banner" src="https://github.com/zoonk/.github/assets/4393133/ddbb2208-feac-4a58-adac-f769cff4dc7f">
-</picture>
+# PokerDex
 
-> [!CAUTION]
-> ## Project No Longer Maintained
->
-> Uneebee is no longer being maintained. I’m building a new platform, [Zoonk](https://github.com/zoonk/zoonk), with a different focus. Instead of continuing Uneebee, I’m restructuring everything from the ground up to create a better way to learn through interactive courses.
->
-> The new project will initially use LLMs for learning and later expand to allow course creation, similar to Uneebee but with a more refined approach.
->
-> If you liked Uneebee, feel free to fork it. To follow the progress of Zoonk, [check out the new repo](https://github.com/zoonk/zoonk).
->
+PokerDex is a mobile-friendly Texas Hold’em learning app. It combines short theory lessons with hand-decision practice and saved progress. All chips are fictional; the app is for learning, not gambling.
 
----
+## Current MVP
 
-<p align="center">
-  Open-source alternative to create interactive courses like Duolingo.
-  <br />
-  <a href="https://zoonk.org"><strong>Learn more »</strong></a>
-  <br />
-  <br />
-  <a href="https://github.com/zoonk/.github/blob/main/roadmap.md">Roadmap</a>
-  ·
-  <a href="https://github.com/orgs/zoonk/discussions">Community</a>
-</p>
+- Guest onboarding, with optional account settings.
+- A vertical Play journey map with a Home location for Teddy, Grandpa, Mum, Sister, Brother, and Dad, followed by a separate House Tournament. Teddy is the playable Level 0 warm-up; later opponents and the tournament are locked while their bots are built.
+- A topic-led Theory path from poker foundations and decision-making through preflop, equity, board reading, betting, responses, and later-street planning. Beginner lessons and a first stack-depth lesson are available; other intermediate and advanced topics are shown as planned modules.
+- Puzzles grouped by Preflop, Flop, Turn, River, and Showdown. Each street has two short, authored visual puzzles. Choose a street to start a random hand, with an optional skill-level filter.
+- Saved lesson progress, per-skill practice summaries, and review questions.
+- A responsive interface designed for phone browsers as well as desktop.
 
-## Table of Contents
+Home puts Play first, with lessons and Theory secondary. The journey map begins at Home and ends at a separate House Tournament. Teddy is the Level 0 warm-up outside that tournament; his current prototype supports fold, check, call, raise, card dealing, and showdown against a predictable check/call policy. Draft playstyle concepts for Grandpa, Mum, Sister, Brother, and Dad are documented in [HOLDEM_BOT_ROSTER.md](HOLDEM_BOT_ROSTER.md); their gameplay and the tournament remain locked. The game does not yet include strategic bot profiles, rotating the dealer button between hands, all-ins, or side pots. Active hand state is temporary and is not saved across refreshes. The current **Just Play** action opens a randomly selected authored puzzle lesson across the five streets. It does not yet generate a new random puzzle. Strategy rubrics are draft teaching heuristics and need review by a poker-knowledgeable person before public release.
 
-- [About this project](#about-this-project)
-- [Tech stack](#tech-stack)
-- [Getting started](#getting-started)
-  - [Requirements](#requirements)
-  - [Local development](#local-development)
-- [SSL on localhost](#ssl-on-localhost)
-- [Mailer](#mailer)
-- [Storage](#storage)
-- [Sponsors](#sponsors)
-
-## About this project
-
-Interactive learning is [more effective](https://www.sciencedaily.com/releases/2021/09/210930140710.htm) than traditional methods. [Learners remember](https://www.linkedin.com/pulse/how-does-interactive-learning-boost-outcomes/) 10% of what they hear, 20% of what they read but 80% of what they see and do. That's why 34 hours of Duolingo [are equivalent](https://support.duolingo.com/hc/en-us/articles/115000035183-Are-there-official-studies-about-Duolingo-) to a full university semester of language education.
-
-We love Duolingo. We think those kinds of interactive experiences should be used in more fields. That's why we're building Zoonk, an open-source platform to create interactive courses like Duolingo.
-
-## Tech stack
-
-- **Backend**: [Phoenix](https://www.phoenixframework.org/)
-- **Frontend**: [Phoenix LiveView](https://hexdocs.pm/phoenix_live_view)
-- **Database**: [Postgres](https://www.postgresql.org) - [Neon](https://neon.tech/)
-- **CSS**: [Tailwind CSS](https://tailwindcss.com/)
-- **Email**: [Resend](https://resend.com/)
-- **Storage**: [Tigris](https://tigrisdata.com/)
-- **Hosting**: [Fly](https://fly.io/)
-
-## Getting started
-
-Follow the instructions below to get Zoonk up and running on your local machine. We have a `Dockerfile` for deploying our demo app to [Fly](https://fly.io/). For using Docker locally, [see this](./local/README.md).
+## Run locally
 
 ### Requirements
 
-- **Elixir 1.17+** and **Erlang 26+**. Run `elixir -v` to find your current version for [Elixir](https://elixir-lang.org/install.html) and [Erlang](https://elixir-lang.org/install.html#installing-erlang).
-- **Hex**: `mix local.hex`.
-- **Phoenix**: `mix archive.install hex phx_new`.
-- **PostgreSQL 15+**: [PostgreSQL](https://www.postgresql.org/).
-- (Linux users only): [inotify-tools](https://github.com/inotify-tools/inotify-tools/wiki).
+- Elixir 1.20.5 with Erlang/OTP 29 (other compatible versions may work).
+- Rust 1.100.0 through Rustup for the native poker engine (Rust 2024 edition).
+- PostgreSQL 15 or newer, running locally.
+- The PostgreSQL connection in `config/dev.exs` currently uses database `zoonk_dev`, username `postgres`, and password `postgres`. Change that local config if your PostgreSQL setup uses different credentials.
 
-### Local development
-
-- Run `mix setup` to install dependencies and set up the database and assets.
-- Run `mix seed` to fetch initial data to the database ([See options](./priv/repo/seed/README.md)).
-- Run `mix phx.server` to start a development server.
-- Run `mix test` to run tests or `mix test.watch` to run tests and watch for changes.
-- Run `mix ci` to run code quality checks.
-- Run `mix locale` to update translation files.
-
-## SSL on localhost
-
-Prefer to do local development using SSL to resemble production as much as possible. You can use [mkcert](https://github.com/FiloSottile/mkcert) to generate a certificate. After you install `mkcert`, follow the steps below:
-
-- Create a `cert` directory under `priv`: `mkdir priv/cert`.
-- Generate a new certificate: `mkcert -key-file priv/cert/selfsigned_key.pem -cert-file priv/cert/selfsigned.pem localhost zoonk.test "*.zoonk.test" apple.test`.
-- Run `mkcert -install` to install the certificate in the system trust store.
-- You may also need to enable `Allow invalid certificates for resources loaded from localhost` on [Google Chrome flags](chrome://flags/#allow-insecure-localhost).
-- Restart your local server: `mix phx.server`. You may also need to restart your browser.
-
-You also need to make sure your machine maps `localhost` to a test domain (we're using `zoonk.test` for this guide). `dnsmasq` allows you to resolve domains to your local machine without having to change your `/etc/hosts` file. To install `dnsmasq`:
+### Start the app
 
 ```sh
-brew install dnsmasq
-
-# Create a configuration directory
-mkdir -pv $(brew --prefix)/etc/
-
-# Set up your domains
-echo 'address=/zoonk.test/127.0.0.1' >> $(brew --prefix)/etc/dnsmasq.conf
-echo 'address=/.zoonk.test/127.0.0.1' >> $(brew --prefix)/etc/dnsmasq.conf
-echo 'address=/apple.test/127.0.0.1' >> $(brew --prefix)/etc/dnsmasq.conf
-
-# Add dnsmasq to your resolver
-sudo mkdir -v /etc/resolver
-sudo bash -c 'echo "nameserver 127.0.0.1" > /etc/resolver/zoonk.test'
-sudo bash -c 'echo "nameserver 127.0.0.1" > /etc/resolver/apple.test'
-
-# Start dnsmasq
-sudo brew services start dnsmasq
+export PATH="$HOME/.rustup/toolchains/1.100.0-aarch64-apple-darwin/bin:$PATH"  # use the newer Cargo required by the poker engine
+mix setup
+mix seed
+mix phx.server
 ```
 
-That's it! You can now start your local server (`mix phx.server`) and test your domains using:
+The local PokerDex school uses the `zoonk.test` hostname. If it is not already mapped to your computer, add `127.0.0.1 zoonk.test` to your hosts file, then open [http://zoonk.test:4000](http://zoonk.test:4000). `mix seed` can be rerun; it adds missing PokerDex demo data and does not overwrite existing lesson content. It does not remove old demo records from an existing database.
 
-- https://zoonk.test:4001
-- https://apple.zoonk.test:4001 (each school slug can be used as a subdomain of `zoonk.test`).
-- Or any other domain you added before.
+The local HTTPS listener uses a development certificate that browsers may not trust. Use the HTTP address above for normal local work; HTTPS on port 4001 is optional.
 
-## Mailer
+### Useful commands
 
-We're using [Resend](https://resend.com) to send emails. To make it work in production, you need to set the following environment variables on your server:
+```sh
+mix test                 # run the test suite
+mix seed                 # add missing local demo data
+mix phx.server           # start the development server
+```
 
-- `RESEND_API_KEY`: Your Resend API key.
+## Data and content
 
-## Storage
+PostgreSQL stores users, lessons, answers, and progress. Authored puzzle content lives in `lib/content/holdem_curriculum.ex`; Theory topics and lessons live in `lib/content/holdem_theory_curriculum.ex`. `priv/repo/seed/holdem_curriculum.ex` writes both to the local database. The seed process is for development only—do not run it against a production database.
 
-You need to use an S3-compatible storage service to store your files. At Zoonk, we're using [Tigris](https://tigrisdata.com/). You need to add the following environment variables:
+Scenario structure and review requirements are documented in [HOLDEM_CONTENT_CONTRACT.md](HOLDEM_CONTENT_CONTRACT.md). The product roadmap and completed work are in [HOLDEM_TRAINER_PLAN.md](HOLDEM_TRAINER_PLAN.md).
 
-- `AWS_ACCESS_KEY_ID`: Your AWS access key ID.
-- `AWS_SECRET_ACCESS_KEY`: Your AWS secret access key.
-- `AWS_REGION`: Your AWS region.
-- `BUCKET_NAME`: Your AWS bucket name.
-- `AWS_ENDPOINT_URL_S3`: Your AWS endpoint URL.
-- `AWS_CDN_URL`: Your AWS CDN URL (optional. If missing, we'll use the S3 endpoint URL).
-- `CSP_CONNECT_SRC`: Your S3 domain (i.e. `https://fly.storage.tigris.dev`).
+The topic-led Theory page follows the progression in [HOLDEM_THEORY_CURRICULUM.md](HOLDEM_THEORY_CURRICULUM.md). Beginner lessons are authored for the first concepts, while later modules remain visible as planned topics.
 
-## Translations
+## Project structure
 
-Follow the steps below to add a new language to Zoonk:
+- `lib/content/` — course and lesson data, poker rules, scenarios, learner LiveViews, and progress.
+- `lib/accounts/` and `lib/organizations/` — accounts and the school context currently used by the inherited app foundation.
+- `priv/repo/migrations/` — database schema changes.
+- `priv/repo/seed/` — local PokerDex demo users and curriculum.
+- `assets/` — Tailwind styles and browser code.
+- `native/poker_native/` — Rustler NIF using `rs-poker` for the Play table prototype.
+- `test/` — domain, database, and LiveView tests.
 
-1. Copy the `priv/gettext/en` directory to `priv/gettext/<language_code>`.
-2. Translate the `*.po` files.
-3. Add the language code to the `locales` list in [config/config.exs](config/config.exs).
-4. Add the language name to `@supported_locales` in [lib/translate/translate_plug.ex](lib/translate/translate_plug.ex).
+The school and course foundation is still present because the learner routes, course content, and local app setup depend on it. The generic sample schools and sample courses from the original template are not part of the PokerDex seed data.
 
-## Sponsors
+## Next product steps
 
-- [Gustavo A. Castillo](https://github.com/guscastilloa)
-- [@adriy-be](https://github.com/adriy-be)
-- Add your name or brand here by [sponsoring our project](https://github.com/sponsors/wceolin).
+1. Replace the predictable check/call opponent with a first strategic bot, after adding position rotation and defining all-in/side-pot behavior.
+2. Review the draft strategic puzzle answers with a poker-knowledgeable reviewer.
+3. Keep Puzzles visual and brief before the decision, then explain the reasoning after the choice. Expand the authored street sets as their answer keys are reviewed.
+4. Fill in the remaining beginner Theory topics, then add the intermediate and advanced modules from the curriculum note.
+5. Add a constrained, reproducible puzzle generator only after its templates and rule checks are reviewed.
+6. Check accessibility, phone layouts, and data handling before inviting external learners.
+
+## License
+
+This repository retains its [GNU AGPL v3 license](LICENSE). Review the license before distributing or hosting a modified version.

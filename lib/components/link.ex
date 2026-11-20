@@ -50,7 +50,7 @@ defmodule ZoonkWeb.Components.Link do
         "text-sm font-semibold leading-6",
         @color == :black && "bg-gray-700 text-white hover:bg-gray-900 focus:outline-gray-700",
         @color == :alert && "bg-pink-500 text-white hover:bg-pink-700 focus:outline-pink-500",
-        @color == :primary && "bg-indigo-500 text-white hover:bg-indigo-700 focus:outline-indigo-500",
+        @color == :primary && "bg-poker-gold text-[#2C1320] shadow-sm hover:bg-poker-gold-light focus:outline-poker-gold",
         @color == :white && "bg-white text-gray-900 hover:bg-gray-50 ring-1 ring-inset ring-gray-300 focus:outline-gray-300",
         @color == :black_light && "bg-gray-50 text-gray-900 hover:bg-gray-200 focus:outline-gray-50",
         @color == :alert_light && "bg-pink-50 text-pink-900 hover:bg-pink-200 focus:outline-pink-50",

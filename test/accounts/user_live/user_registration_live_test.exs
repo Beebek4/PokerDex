@@ -68,7 +68,7 @@ defmodule ZoonkWeb.UserRegistrationLiveTest do
 
       # Now do a logged in request
       response = html_response(get(conn, ~p"/courses"), 200)
-      assert response =~ "Settings"
+      assert response =~ "Profile"
     end
   end
 
@@ -107,7 +107,7 @@ defmodule ZoonkWeb.UserRegistrationLiveTest do
 
       # Now do a logged in request
       response = html_response(get(conn, ~p"/courses"), 200)
-      assert response =~ "Settings"
+      assert response =~ "Profile"
 
       # User should not be confirmed.
       assert Accounts.get_user_by_email(attrs.email).confirmed_at == nil
@@ -192,7 +192,7 @@ defmodule ZoonkWeb.UserRegistrationLiveTest do
 
       # Now do a logged in request and assert on the school setup redirect
       response = get(conn, ~p"/")
-      assert redirected_to(response) == ~p"/schools/new"
+      assert redirected_to(response) == ~p"/welcome"
     end
   end
 

@@ -123,30 +123,13 @@ defmodule ZoonkWeb.DashboardSchoolUserViewLiveTest do
       assert Accounts.get_user!(student.id)
     end
 
-    test "toggles analytics for a user", %{conn: conn, school: school} do
+    test "does not show analytics controls", %{conn: conn, school: school} do
       user = user_fixture()
       school_user_fixture(%{school: school, user: user})
 
       {:ok, lv, _html} = live(conn, ~p"/dashboard/u/#{user.username}")
 
-      lv |> element("button", "Disable analytics") |> render_click()
-      refute Organizations.get_school_user(school.slug, user.username).analytics?
-
-      lv |> element("button", "Enable analytics") |> render_click()
-      assert Organizations.get_school_user(school.slug, user.username).analytics?
-    end
-
-    test "hides the analytics toggle if the school has a parent school", %{conn: conn, school: school} do
-      parent_school = school_fixture(%{name: "Parent School"})
-      Organizations.update_school(school, %{school_id: parent_school.id})
-
-      user = user_fixture()
-      school_user_fixture(%{school: school, user: user})
-
-      {:ok, lv, _html} = live(conn, ~p"/dashboard/u/#{user.username}")
-
-      refute has_element?(lv, ~s|button *:fl-icontains("disable analytics")|)
-      refute has_element?(lv, ~s|button *:fl-icontains("enable analytics")|)
+      refute has_element?(lv, ~s|button *:fl-icontains("analytics")|)
     end
   end
 end

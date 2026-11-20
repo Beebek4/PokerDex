@@ -13,6 +13,7 @@ defmodule Zoonk.Content.Lesson do
 
   schema "lessons" do
     field :cover, :string
+    field :difficulty, Ecto.Enum, values: [:beginner, :intermediate, :advanced], default: :beginner
     field :description, :string
     field :name, :string
     field :order, :integer
@@ -30,7 +31,7 @@ defmodule Zoonk.Content.Lesson do
   @spec changeset(Ecto.Schema.t(), map()) :: Ecto.Changeset.t()
   def changeset(lesson, attrs) do
     lesson
-    |> cast(attrs, [:cover, :course_id, :description, :name, :order, :published?])
+    |> cast(attrs, [:cover, :course_id, :description, :difficulty, :name, :order, :published?])
     |> validate_required([:course_id, :description, :name, :order])
   end
 end

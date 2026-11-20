@@ -163,6 +163,7 @@ defmodule Zoonk.Content do
       |> join(:left, [c], u in assoc(c, :users), on: u.role == ^:student)
       |> where([c], c.school_id == ^school.id)
       |> where([c], c.published? and c.public? and c.language == ^language)
+      |> where([c], c.slug != "zoonk-for-learners")
       |> group_by([c], c.id)
       |> order_by([c, u], desc: count(u.id))
       |> limit(^limit)
@@ -791,6 +792,77 @@ defmodule Zoonk.Content do
   end
 
   @doc """
+  Returns the order of the last saved step in the user's current, unfinished lesson attempt.
+
+  Selections from completed attempts are ignored, so starting a lesson again begins at its
+  first step while refreshing an unfinished attempt resumes after its latest saved answer.
+  """
+  @spec get_lesson_resume_order(non_neg_integer(), non_neg_integer()) :: non_neg_integer()
+  def get_lesson_resume_order(user_id, lesson_id) do
+    completed_at =
+      case get_user_lesson(user_id, lesson_id) do
+        nil -> nil
+        user_lesson -> user_lesson.inserted_at
+      end
+
+    query =
+      UserSelection
+      |> join(:inner, [selection], step in assoc(selection, :step))
+      |> where(
+        [selection, _step],
+        selection.user_id == ^user_id and selection.lesson_id == ^lesson_id and selection.activity_type == "lesson"
+      )
+      |> order_by([selection, _step], desc: selection.inserted_at)
+      |> limit(1)
+      |> select([_selection, step], step.order)
+
+    query =
+      if completed_at do
+        where(query, [selection, _step], selection.inserted_at > ^completed_at)
+      else
+        query
+      end
+
+    Repo.one(query) || 0
+  end
+
+  @doc "Returns the most recent unacknowledged answer in an unfinished lesson."
+  def get_pending_lesson_selection(user_id, lesson_id) do
+    completed_at =
+      case get_user_lesson(user_id, lesson_id) do
+        nil -> nil
+        user_lesson -> user_lesson.inserted_at
+      end
+
+    query =
+      UserSelection
+      |> where([selection], selection.user_id == ^user_id and selection.lesson_id == ^lesson_id and selection.activity_type == "lesson" and not selection.acknowledged?)
+      |> order_by([selection], desc: selection.inserted_at, desc: selection.id)
+      |> limit(1)
+      |> preload([:option, step: [:options, suggested_courses: :course]])
+
+    query = if completed_at, do: where(query, [selection], selection.inserted_at > ^completed_at), else: query
+    Repo.one(query)
+  end
+
+  def get_pending_selection_for_step(user_id, step_id) do
+    UserSelection
+    |> where([selection], selection.user_id == ^user_id and selection.step_id == ^step_id and selection.activity_type == "review" and not selection.acknowledged?)
+    |> order_by([selection], desc: selection.inserted_at, desc: selection.id)
+    |> limit(1)
+    |> preload(:option)
+    |> Repo.one()
+  end
+
+  @doc "Marks a saved answer as seen before the learner advances."
+  def acknowledge_user_selection(selection_id) do
+    UserSelection
+    |> Repo.get!(selection_id)
+    |> Ecto.Changeset.change(acknowledged?: true)
+    |> Repo.update()
+  end
+
+  @doc """
   Get a lesson step by its order.
 
   ## Examples
@@ -975,10 +1047,68 @@ defmodule Zoonk.Content do
     UserSelection
     |> where([us], us.user_id == ^user_id)
     |> where([us], us.lesson_id == ^lesson_id)
+    |> where([us], us.activity_type == "lesson")
     |> order_by([us], desc: us.inserted_at)
     |> limit(^steps)
     |> Repo.all()
   end
+
+  @doc "Returns poker scenario attempts for a user without loading unrelated learner data."
+  def list_user_scenario_attempts(user_id) do
+    UserSelection
+    |> where([us], us.user_id == ^user_id and not is_nil(us.score) and not is_nil(us.scenario_snapshot))
+    |> order_by([us], desc: us.inserted_at)
+    |> select([us], %{score: us.score, correct: us.correct, total: us.total, scenario_snapshot: us.scenario_snapshot, inserted_at: us.inserted_at})
+    |> Repo.all()
+  end
+
+  @doc "Returns alternate authored questions for the user's most recently missed skills."
+  def list_due_review_scenarios(user_id, school_id) do
+    attempts = list_user_scenario_attempts(user_id)
+    due_skills = due_skills(attempts)
+    attempted_ids = MapSet.new(attempts, &get_in(&1.scenario_snapshot, ["scenario_id"]))
+
+    candidates =
+      LessonStep
+      |> join(:inner, [step], lesson in assoc(step, :lesson))
+      |> join(:inner, [step, lesson], course in assoc(lesson, :course))
+      |> where([step, lesson, course], course.school_id == ^school_id and course.public? and course.published? and lesson.published? and not is_nil(step.poker_scenario))
+      |> preload([step, lesson, course], lesson: {lesson, course: course}, options: [])
+      |> Repo.all()
+
+    Enum.flat_map(due_skills, fn {skill, reason} ->
+      case Enum.find(candidates, fn step ->
+             scenario = step.poker_scenario
+
+             scenario["status"] in ["draft", "reviewed", "published"] and
+               scenario["scenario_id"] not in attempted_ids and skill in scenario["skill_tags"]
+           end) do
+        nil -> []
+        step -> [%{skill: skill, reason: reason, step: step, lesson: step.lesson, course: step.lesson.course}]
+      end
+    end)
+  end
+
+  defp due_skills(attempts) do
+    attempts
+    |> Enum.reduce(%{}, fn attempt, latest_by_skill ->
+      scenario = attempt.scenario_snapshot
+      due? = due_attempt?(attempt, scenario)
+
+      Enum.reduce(scenario["skill_tags"] || [], latest_by_skill, fn skill, latest_by_skill ->
+        Map.put_new(latest_by_skill, skill, if(due?, do: review_reason(attempt, scenario)))
+      end)
+    end)
+    |> Enum.reject(fn {_skill, reason} -> is_nil(reason) end)
+    |> Enum.sort_by(&elem(&1, 0))
+  end
+
+  defp due_attempt?(attempt, %{"question" => %{"type" => "choose_action"}}), do: is_integer(attempt.score) and attempt.score < 70
+  defp due_attempt?(attempt, %{"question" => %{"type" => "hand_ranking"}}), do: attempt.correct < attempt.total
+  defp due_attempt?(_attempt, _scenario), do: false
+
+  defp review_reason(attempt, %{"question" => %{"type" => "choose_action"}}), do: "Your latest action score for this skill was #{attempt.score}/100."
+  defp review_reason(_attempt, %{"question" => %{"type" => "hand_ranking"}}), do: "Your latest hand-ranking answer for this skill was incorrect."
 
   @doc """
   Changes a user lesson.

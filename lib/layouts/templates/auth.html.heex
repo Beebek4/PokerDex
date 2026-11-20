@@ -1,10 +1,19 @@
-<header class="flex items-center justify-between p-4 sm:px-6 lg:px-8">
-  <.link href={~p"/"}>
-    <img src={school_icon(@school, @app, 180)} alt={gettext("Logo")} class="h-14" />
-  </.link>
-</header>
-
-<main class="p-4 sm:px-6 lg:px-8">
+<%= if Map.get(assigns, :is_welcome_page, false) do %>
   <.flash_group flash={@flash} />
   <%= @inner_content %>
-</main>
+<% else %>
+  <header class="flex items-center justify-between p-4 sm:px-6 lg:px-8">
+    <.link href={~p"/"} class="inline-flex items-center gap-3">
+      <img src={school_logo(@school, @app)} alt="" class="h-14 w-14 shrink-0 object-contain" />
+      <span class="text-xl font-extrabold tracking-tight">
+        <span class="text-white">Poker</span><span class="text-[#C62828]">Dex</span>
+      </span>
+      <span class="sr-only"><%= school_name(@school) %></span>
+    </.link>
+  </header>
+
+  <main class="p-4 sm:px-6 lg:px-8">
+    <.flash_group flash={@flash} />
+    <%= @inner_content %>
+  </main>
+<% end %>

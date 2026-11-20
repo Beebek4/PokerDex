@@ -7,22 +7,27 @@ defmodule ZoonkWeb.Layouts.MenuUtils do
   alias Zoonk.Storage
 
   @spec school_name(School.t() | nil) :: String.t()
-  def school_name(nil), do: "Zoonk"
+  def school_name(nil), do: "PokerDex"
+  def school_name(%School{school_id: nil}), do: "PokerDex"
   def school_name(%School{} = school), do: school.name
 
   @spec school_logo(School.t() | nil, School.t() | nil) :: String.t()
-  def school_logo(nil, _app), do: ~p"/images/logo.svg"
+  def school_logo(nil, _app), do: ~p"/images/pokerdex_logo.png"
+  def school_logo(%School{school_id: nil, logo: nil}, _app), do: ~p"/images/pokerdex_logo.png"
+  def school_logo(%School{school_id: nil, logo: logo}, _app), do: Storage.get_url(logo)
   def school_logo(%School{logo: nil}, nil), do: school_logo(nil, nil)
   def school_logo(%School{logo: nil}, %School{logo: nil}), do: school_logo(nil, nil)
   def school_logo(%School{logo: nil}, %School{logo: logo}), do: Storage.get_url(logo)
-  def school_logo(%School{} = school, _app), do: Storage.get_url(school.logo)
+  def school_logo(%School{logo: logo}, _app), do: Storage.get_url(logo)
 
   @spec school_icon(School.t() | nil, School.t() | nil, non_neg_integer()) :: String.t()
-  def school_icon(nil, _app, size), do: "/favicon/#{size}.png"
+  def school_icon(nil, _app, _size), do: ~p"/images/pokerdex_logo.png"
+  def school_icon(%School{school_id: nil, icon: nil}, _app, _size), do: ~p"/images/pokerdex_logo.png"
+  def school_icon(%School{school_id: nil, icon: icon}, _app, _size), do: Storage.get_url(icon)
   def school_icon(%School{icon: nil}, nil, size), do: school_icon(nil, nil, size)
   def school_icon(%School{icon: nil}, %School{icon: nil}, size), do: school_icon(nil, nil, size)
   def school_icon(%School{icon: nil}, %School{icon: icon}, _size), do: Storage.get_url(icon)
-  def school_icon(%School{} = school, _app, _size), do: Storage.get_url(school.icon)
+  def school_icon(%School{icon: icon}, _app, _size), do: Storage.get_url(icon)
 
   @spec user_settings?(atom()) :: boolean()
   def user_settings?(active_page) do
@@ -83,7 +88,7 @@ defmodule ZoonkWeb.Layouts.MenuUtils do
 
   @spec show_menu?(atom()) :: boolean()
   def show_menu?(active_page) do
-    active_page not in [:lessonplay, :lessoncompleted, :schoolnew]
+    active_page not in [:lessonplay, :lessoncompleted]
   end
 
   @spec home_page?(atom(), Course.t(), String.t()) :: boolean()

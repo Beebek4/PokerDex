@@ -18,7 +18,6 @@ defmodule ZoonkWeb.Plugs.School do
   alias Phoenix.LiveView
   alias Phoenix.LiveView.Socket
   alias Zoonk.Organizations
-  alias Zoonk.Organizations.School
 
   @doc """
   Fetches the school's data from the database.
@@ -37,36 +36,14 @@ defmodule ZoonkWeb.Plugs.School do
   end
 
   @doc """
-  Checks if the school is already configured.
-
-  If so, then we don't want to show the configuration page.
-  """
-  @spec check_school_setup(Plug.Conn.t(), Keyword.t()) :: Plug.Conn.t()
-  def check_school_setup(%{request_path: "/schools/new"} = conn, opts), do: check_school_setup(conn, opts, conn.assigns.school)
-  def check_school_setup(conn, _opts), do: conn
-
-  # We don't want to show the creation page for child schools.
-  defp check_school_setup(_conn, _opts, %School{} = school) when school.school_id != nil, do: raise(ZoonkWeb.PermissionError, code: :school_already_configured)
-  defp check_school_setup(conn, _opts, _school), do: conn
-
-  @doc """
-  Redirect to the setup page if the school isn't configured.
+  Redirect to onboarding if the app isn't configured.
   """
   @spec setup_school(Plug.Conn.t(), Keyword.t()) :: Plug.Conn.t()
   def setup_school(%{request_path: "/"} = conn, opts), do: setup_school(conn, opts, is_nil(conn.assigns.school))
   def setup_school(conn, _opts), do: conn
 
   defp setup_school(conn, _opts, false), do: conn
-  defp setup_school(conn, _opts, true), do: conn |> Controller.redirect(to: ~p"/schools/new") |> halt()
-
-  @doc """
-  Don't allow a guest user to create a school. Redirect them to the settings page instead.
-  """
-  @spec prevent_guest_to_create_school(Plug.Conn.t(), Keyword.t()) :: Plug.Conn.t()
-  def prevent_guest_to_create_school(%{request_path: "/schools/new", assigns: %{current_user: %{guest?: true}}} = conn, _opts),
-    do: conn |> Controller.redirect(to: ~p"/users/settings") |> halt()
-
-  def prevent_guest_to_create_school(conn, _opts), do: conn
+  defp setup_school(conn, _opts, true), do: conn |> Controller.redirect(to: ~p"/welcome") |> halt()
 
   @doc """
   Requires a subscription for private schools.

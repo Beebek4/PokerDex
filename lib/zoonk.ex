@@ -1,6 +1,6 @@
 defmodule Zoonk do
   @moduledoc """
-  Zoonk keeps the contexts that define your domain
+  PokerDex keeps the contexts that define its domain
   and business logic.
 
   Contexts are also responsible for managing your data, regardless

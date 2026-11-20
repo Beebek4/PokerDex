@@ -78,7 +78,7 @@ defmodule ZoonkWeb.DashboardHomeLiveTest do
   end
 
   defp assert_dashboard(lv, school, host) do
-    assert has_element?(lv, ~s|li[aria-current=page] a:fl-icontains("manage school")|)
+    assert has_element?(lv, ~s|li[aria-current=page] a:fl-icontains("overview")|)
     assert has_element?(lv, ~s|h1 *:fl-icontains("#{school.name}")|)
     assert has_element?(lv, ~s|h1 *:fl-icontains("@#{school.slug}")|)
     assert has_element?(lv, ~s|header p:fl-icontains("#{host}")|)

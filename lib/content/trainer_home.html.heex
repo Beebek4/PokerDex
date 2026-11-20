@@ -1,0 +1,89 @@
+<section class="mx-auto w-full max-w-6xl px-4 py-8 text-white sm:px-6 lg:px-8">
+  <div class="mb-8">
+    <p class="text-poker-gold text-sm font-semibold uppercase tracking-wide">PokerDex · Play</p>
+    <h1 class="mt-2 text-3xl font-bold tracking-tight text-white">Welcome back, <%= @current_user.first_name || "High roller" %></h1>
+  </div>
+
+  <section
+    class="border-poker-gold/30 from-[#5F4B66] to-[#2C1320] shadow-black/30 grid items-center gap-4 overflow-hidden rounded-3xl border bg-gradient-to-br p-5 text-white shadow-xl sm:p-7 lg:grid-cols-[1fr_0.8fr] lg:gap-8"
+    aria-labelledby="home-play-heading"
+  >
+    <div class="relative z-10">
+      <p class="text-poker-gold tracking-[0.2em] text-xs font-bold uppercase">Your table is next</p>
+      <h2 id="home-play-heading" class="mt-2 text-2xl font-extrabold tracking-tight sm:text-4xl">Play against poker bots</h2>
+      <p class="text-[#E2DCE5] mt-2 max-w-xl text-sm leading-6 sm:text-base">
+        A dedicated table for complete Hold’em hands is taking shape. Bot matches are in development; visit Play to follow the first table experience.
+      </p>
+      <div class="mt-4 flex flex-wrap items-center gap-3">
+        <.link
+          navigate={~p"/play"}
+          class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-poker-gold px-4 py-2.5 text-sm font-bold text-[#2C1320] shadow-md shadow-black/20 transition hover:bg-poker-gold-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-poker-gold active:scale-[0.98]"
+        >
+          Explore Play <.icon name="tabler-arrow-right" class="h-4 w-4" />
+        </.link>
+        <span class="border-poker-gold/30 bg-[#2C1320]/35 text-poker-gold rounded-full border px-3 py-1.5 text-xs font-semibold">Bot table in development</span>
+      </div>
+    </div>
+
+    <div class="aspect-square max-w-[23rem] relative mx-auto w-full" aria-hidden="true">
+      <img src={~p"/images/poker/tables/poker_table1.png"} alt="" class="absolute inset-0 h-full w-full object-contain" />
+      <img src={~p"/images/poker/opp_cards.png"} alt="" class="left-[16%] top-[25%] w-[18%] absolute -rotate-12 object-contain" />
+      <img src={~p"/images/poker/opp_cards.png"} alt="" class="right-[16%] top-[25%] w-[18%] absolute rotate-12 object-contain" />
+      <span class="bottom-[12%] border-poker-gold/60 bg-[#2C1320]/90 text-[10px] text-poker-gold absolute left-1/2 -translate-x-1/2 rounded-full border px-3 py-1 font-bold uppercase tracking-wide sm:text-xs">
+        You
+      </span>
+    </div>
+  </section>
+
+  <div class="mt-8 flex items-end justify-between gap-4">
+    <div>
+      <p class="text-poker-gold tracking-[0.18em] text-xs font-bold uppercase">Learning, when you want it</p>
+      <h2 class="mt-1 text-xl font-bold text-white">Continue learning</h2>
+    </div>
+    <.link navigate={~p"/courses"} class="hidden text-sm font-semibold text-poker-gold underline underline-offset-4 sm:block">Browse Theory</.link>
+  </div>
+
+  <section :if={@next_lesson && (@resume? || is_nil(@due_review))} class="border-white/10 bg-[#351B2B] shadow-black/20 mt-4 rounded-2xl border p-4 text-white shadow-lg sm:p-5">
+    <p class="text-poker-gold text-sm font-semibold"><%= if @resume?, do: "Pick up where you left off", else: "Your next step" %></p>
+    <h2 class="mt-2 text-2xl font-bold"><%= @next_lesson.lesson.name %></h2>
+    <p class="text-[#D8D2DF] mt-2 max-w-xl"><%= @next_lesson.lesson.description %></p>
+    <.link_button navigate={~p"/c/#{@next_lesson.course.slug}/#{@next_lesson.lesson.id}"} color={:primary} class="mt-6">
+      <%= if @resume?, do: "Continue lesson", else: "Start lesson" %>
+    </.link_button>
+  </section>
+
+  <section :if={@due_review && !@resume?} class="border-white/10 bg-[#351B2B] shadow-black/20 mt-4 rounded-2xl border p-4 text-white shadow-lg sm:p-5">
+    <p class="text-poker-gold text-sm font-semibold">A skill is ready for a second look</p>
+    <h2 class="mt-2 text-2xl font-bold"><%= @due_review.skill |> String.replace(".", " ") |> String.capitalize() %></h2>
+    <p class="text-[#D8D2DF] mt-2 max-w-xl"><%= @due_review.reason %></p>
+    <.link_button navigate={~p"/review/#{@due_review.course.slug}/#{@due_review.lesson.id}/#{@due_review.step.id}"} color={:primary} class="mt-6">
+      Try a different hand
+    </.link_button>
+  </section>
+
+  <section :if={is_nil(@next_lesson) && is_nil(@due_review)} class="border-white/10 bg-[#351B2B] shadow-black/20 mt-4 rounded-2xl border p-4 text-white shadow-lg sm:p-5">
+    <p class="text-poker-gold text-sm font-semibold">Your next step</p>
+    <h2 class="mt-2 text-2xl font-bold">Keep practising at your own pace</h2>
+    <p class="text-[#D8D2DF] mt-2">You’ve completed the current lessons. More reviewed practice can be added as the curriculum grows.</p>
+    <.link_button navigate={~p"/practice"} color={:primary} class="mt-6">Explore puzzles</.link_button>
+  </section>
+
+  <div class="mt-8">
+    <h2 class="text-xl font-bold text-white">Theory tracks</h2>
+    <p class="text-[#A7ADC6] mt-1 text-sm">Build your foundations with focused lessons whenever you want a break from the table.</p>
+  </div>
+
+  <div class="mt-4 grid gap-4 md:grid-cols-3">
+    <article :for={track <- @tracks} class="border-white/10 bg-[#351B2B] shadow-black/20 flex flex-col rounded-2xl border p-5 shadow-lg">
+      <div class="flex-1">
+        <h3 class="text-lg font-semibold text-white"><%= track.course.name %></h3>
+        <p class="text-[#A7ADC6] mt-2 text-sm leading-6"><%= track.course.description %></p>
+      </div>
+      <div class="text-[#A7ADC6] mt-5 flex items-center justify-between text-sm">
+        <span><%= length(track.lessons) %> short lessons</span>
+        <span><%= track.progress %>% complete</span>
+      </div>
+      <.link navigate={~p"/c/#{track.course.slug}"} class="mt-4 font-semibold text-poker-gold underline underline-offset-4">View track</.link>
+    </article>
+  </div>
+</section>

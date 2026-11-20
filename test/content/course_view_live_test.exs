@@ -101,13 +101,35 @@ defmodule ZoonkWeb.CourseViewLiveTest do
       assert has_element?(lv, ~s|span:fl-contains("25%")|)
     end
 
+    test "shows a clear next lesson", %{conn: conn, course: course, lesson: lesson} do
+      {:ok, lv, _html} = live(conn, "/c/#{course.slug}")
+
+      assert has_element?(lv, "a", "Start lesson: #{lesson.name}")
+    end
+
+    test "offers to resume an unfinished lesson", %{conn: conn, course: course, user: user, lesson: lesson} do
+      step = lesson_step_fixture(%{lesson: lesson, order: 1})
+
+      Content.add_user_selection(%{
+        duration: 5,
+        correct: 1,
+        total: 1,
+        user_id: user.id,
+        lesson_id: lesson.id,
+        step_id: step.id
+      })
+
+      {:ok, lv, _html} = live(conn, "/c/#{course.slug}")
+
+      assert has_element?(lv, "a", "Continue lesson: #{lesson.name}")
+    end
+
     test "make the home menu active when it's the latest course", %{conn: conn, course: course, user: user, lesson: lesson} do
       Content.add_user_lesson(%{user_id: user.id, lesson_id: lesson.id, attempts: 1, correct: 3, total: 4})
 
       {:ok, lv, _html} = live(conn, "/c/#{course.slug}")
 
-      assert has_element?(lv, ~s|li[aria-current=page] a:fl-icontains("home")|)
-      refute has_element?(lv, ~s|li[aria-current=page] a:fl-icontains("courses")|)
+      assert has_element?(lv, ~s|li[aria-current=page] a:fl-icontains("theory")|)
     end
 
     test "make the courses menu active when it's not the latest course", %{conn: conn, school: school, user: user, lesson: lesson} do
@@ -117,8 +139,7 @@ defmodule ZoonkWeb.CourseViewLiveTest do
 
       {:ok, lv, _html} = live(conn, "/c/#{other_course.slug}")
 
-      refute has_element?(lv, ~s|li[aria-current=page] a:fl-icontains("home")|)
-      assert has_element?(lv, ~s|li[aria-current=page] a:fl-icontains("courses")|)
+      assert has_element?(lv, ~s|li[aria-current=page] a:fl-icontains("theory")|)
     end
 
     test "displays the lesson score for completed lessons", %{conn: conn, course: course, user: user, lesson: lesson} do

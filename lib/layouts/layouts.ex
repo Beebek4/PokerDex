@@ -9,7 +9,6 @@ defmodule ZoonkWeb.Layouts do
   import ZoonkWeb.Layouts.MenuUtils
 
   alias Zoonk.Organizations.School
-  alias Zoonk.Organizations.SchoolUser
   alias ZoonkWeb.Components.Layouts.CourseSelect
   alias ZoonkWeb.Components.Layouts.LessonSelect
 
@@ -23,11 +22,16 @@ defmodule ZoonkWeb.Layouts do
   def page_title(nil, school), do: school_name(school)
   def page_title(title, _school), do: title
 
-  @spec plausible_domain(School.t()) :: String.t() | nil
-  def plausible_domain(%School{} = app), do: app.custom_domain
-  def plausible_domain(_school), do: nil
+  @legacy_suit_avatars [
+    "/images/poker/suits/spade.png",
+    "/images/poker/suits/heart.png",
+    "/images/poker/suits/diamond.png",
+    "/images/poker/suits/club.png"
+  ]
 
-  @spec enable_plausible?(SchoolUser.t() | nil) :: boolean()
-  def enable_plausible?(%SchoolUser{} = school_user), do: school_user.analytics?
-  def enable_plausible?(nil), do: true
+  defp navbar_avatar(nil), do: ~p"/images/poker/characters/hero.png"
+
+  defp navbar_avatar(avatar) when avatar in @legacy_suit_avatars, do: ~p"/images/poker/characters/hero.png"
+
+  defp navbar_avatar(avatar), do: avatar
 end

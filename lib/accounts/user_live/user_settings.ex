@@ -3,9 +3,19 @@ defmodule ZoonkWeb.Live.UserSettings do
   use ZoonkWeb, :live_view
 
   alias Zoonk.Accounts
-  alias Zoonk.Storage
   alias ZoonkWeb.Components.DeleteItem
-  alias ZoonkWeb.Components.Upload
+
+  @avatar_choices [
+    %{label: "Player", image: "/images/poker/characters/hero.png"},
+    %{label: "Teddy", image: "/images/poker/characters/teddy.png"}
+  ]
+
+  @legacy_suit_avatars [
+    "/images/poker/suits/spade.png",
+    "/images/poker/suits/heart.png",
+    "/images/poker/suits/diamond.png",
+    "/images/poker/suits/club.png"
+  ]
 
   # When users change their email address, we send them a link to confirm their new email.
   # That link contains a `token` parameter that we use to confirm their email when they
@@ -33,8 +43,27 @@ defmodule ZoonkWeb.Live.UserSettings do
       |> assign(:current_password, nil)
       |> assign(:form, to_form(changeset))
       |> assign(:trigger_submit, false)
+      |> assign(:avatar_choices, @avatar_choices)
 
     {:ok, socket}
+  end
+
+  @impl Phoenix.LiveView
+  def handle_event("choose-avatar", %{"avatar" => avatar}, %{assigns: %{live_action: :avatar}} = socket) do
+    if Enum.any?(@avatar_choices, &(&1.image == avatar)) do
+      case Accounts.update_user_settings(socket.assigns.current_user, %{avatar: avatar}) do
+        {:ok, updated_user} ->
+          {:noreply,
+           socket
+           |> assign(:current_user, updated_user)
+           |> put_flash(:info, gettext("Avatar updated successfully!"))}
+
+        {:error, _changeset} ->
+          {:noreply, put_flash(socket, :error, gettext("Could not update avatar!"))}
+      end
+    else
+      {:noreply, put_flash(socket, :error, gettext("Choose one of the available avatars."))}
+    end
   end
 
   @impl Phoenix.LiveView
@@ -191,4 +220,9 @@ defmodule ZoonkWeb.Live.UserSettings do
   defp get_page_title(:avatar), do: gettext("Avatar")
   defp get_page_title(:delete), do: gettext("Delete")
   defp get_page_title(_live_action), do: gettext("Settings")
+
+  defp avatar_selected?(avatar, image) do
+    avatar == image or
+      (image == "/images/poker/characters/hero.png" and (is_nil(avatar) or avatar in @legacy_suit_avatars))
+  end
 end

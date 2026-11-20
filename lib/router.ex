@@ -24,12 +24,11 @@ defmodule ZoonkWeb.Router do
 
     plug :put_secure_browser_headers, %{
       "content-security-policy" =>
-        "default-src 'self'; script-src-elem 'self' https://plausible.io; connect-src 'self' https://plausible.io #{ContentSecurityPolicy.get_connect_src()}; img-src 'self' #{Storage.get_domain()} data: blob:; frame-src 'self' www.youtube-nocookie.com;"
+        "default-src 'self'; script-src-elem 'self'; connect-src 'self' #{ContentSecurityPolicy.get_connect_src()}; img-src 'self' #{Storage.get_domain()} data: blob:; frame-src 'self' www.youtube-nocookie.com;"
     }
 
     plug :fetch_current_user
     plug :fetch_school
-    plug :check_school_setup
     plug :setup_school
     plug :set_session_locale
   end
@@ -55,6 +54,8 @@ defmodule ZoonkWeb.Router do
   scope "/", ZoonkWeb.Controller do
     pipe_through :browser
     get "/", Home, :index
+    get "/welcome", Home, :welcome
+    post "/start", Home, :start
   end
 
   ## Authentication routes
@@ -94,7 +95,6 @@ defmodule ZoonkWeb.Router do
     pipe_through [
       :browser,
       :require_authenticated_user,
-      :prevent_guest_to_create_school,
       :require_approval_for_private_schools,
       :fetch_course,
       :require_course_user_for_lesson
@@ -108,7 +108,11 @@ defmodule ZoonkWeb.Router do
         {Course, :mount_course},
         {Course, :mount_lesson}
       ] do
-      live "/contact", Contact
+      live "/home", TrainerHome
+      live "/play", Play
+      live "/practice", Practice
+      live "/progress", Progress
+      live "/review/:course_slug/:lesson_id/:step_id", Review
 
       live "/users/settings", UserSettings, :profile
       live "/users/settings/avatar", UserSettings, :avatar
@@ -116,8 +120,6 @@ defmodule ZoonkWeb.Router do
       live "/users/settings/password", UserSettings, :password
       live "/users/settings/delete", UserSettings, :delete
       live "/users/settings/confirm_email/:token", UserSettings, :confirm_email
-
-      live "/schools/new", SchoolNew
 
       live "/courses", CourseList
       live "/courses/my", MyCourses

@@ -9,18 +9,22 @@ defmodule Zoonk.Accounts.User do
   alias ZoonkWeb.Plugs.Translate
 
   @type t() :: %__MODULE__{}
+  @experience_levels ~w(new know_rules casual)
+  @learning_goals ~w(basics better_decisions specific_topic)
 
   schema "users" do
     field :avatar, :string
     field :confirmed_at, :naive_datetime
     field :date_of_birth, :date
     field :email, :string
+    field :experience_level, :string
     field :first_name, :string
     field :guest?, :boolean, default: false
     field :hashed_password, :string, redact: true
     field :current_password, :string, virtual: true, redact: true
     field :language, Ecto.Enum, values: Translate.supported_locales(), default: :en
     field :last_name, :string
+    field :learning_goal, :string
     field :password, :string, virtual: true, redact: true
     field :sound_effects?, :boolean, default: false
     field :username, :string
@@ -54,7 +58,22 @@ defmodule Zoonk.Accounts.User do
   @spec registration_changeset(Ecto.Schema.t(), map(), Keyword.t()) :: Ecto.Changeset.t()
   def registration_changeset(user, attrs, opts \\ []) do
     user
-    |> cast(attrs, [:avatar, :date_of_birth, :email, :first_name, :guest?, :language, :last_name, :password, :sound_effects?, :username])
+    |> cast(attrs, [
+      :avatar,
+      :date_of_birth,
+      :email,
+      :experience_level,
+      :first_name,
+      :guest?,
+      :language,
+      :last_name,
+      :learning_goal,
+      :password,
+      :sound_effects?,
+      :username
+    ])
+    |> validate_inclusion(:experience_level, @experience_levels)
+    |> validate_inclusion(:learning_goal, @learning_goals)
     |> validate_user_email(opts)
     |> validate_password(opts)
     |> validate_username(opts)
@@ -127,7 +146,9 @@ defmodule Zoonk.Accounts.User do
   @spec settings_changeset(Ecto.Schema.t(), map(), Keyword.t()) :: Ecto.Changeset.t()
   def settings_changeset(user, attrs, opts \\ []) do
     user
-    |> cast(attrs, [:avatar, :first_name, :last_name, :language, :sound_effects?, :username])
+    |> cast(attrs, [:avatar, :experience_level, :first_name, :last_name, :language, :learning_goal, :sound_effects?, :username])
+    |> validate_inclusion(:experience_level, @experience_levels)
+    |> validate_inclusion(:learning_goal, @learning_goals)
     |> validate_settings()
     |> validate_username(opts)
   end

@@ -88,17 +88,4 @@ defmodule ZoonkWeb.Live.Dashboard.SchoolUserView do
         {:noreply, put_flash(socket, :error, dgettext("orgs", "Could not remove user!"))}
     end
   end
-
-  @impl Phoenix.LiveView
-  def handle_event("toggle-analytics", _params, socket) do
-    %{school_user: school_user} = socket.assigns
-
-    case Organizations.update_school_user(school_user.id, %{analytics?: !school_user.analytics?}) do
-      {:ok, updated_su} ->
-        {:noreply, assign(socket, :school_user, Map.put(updated_su, :user, school_user.user))}
-
-      {:error, _changeset} ->
-        {:noreply, put_flash(socket, :error, dgettext("orgs", "Could not toggle analytics tracking!"))}
-    end
-  end
 end

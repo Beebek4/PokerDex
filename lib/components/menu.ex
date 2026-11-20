@@ -25,30 +25,39 @@ defmodule ZoonkWeb.Components.Menu do
   attr :title, :string, required: true, doc: "Menu title."
   attr :rest, :global, include: ~w(href method navigate)
   attr :class, :string, default: nil
+  attr :icon_class, :string, default: nil
+  attr :emphasis, :boolean, default: false
 
   def menu_item(assigns) do
     ~H"""
     <li aria-current={@active and "page"} class={@class}>
       <.link
         class={[
-          "group flex gap-x-3 rounded-md p-2 text-sm font-semibold leading-6 text-gray-700 hover:bg-gray-50 hover:text-indigo-600",
-          @active && "bg-gray-50 text-indigo-600",
-          not @active && "text-gray-700 hover:text-indigo-600 hover:bg-gray-50"
+          "group flex gap-x-3 rounded-xl p-2.5 text-sm font-semibold leading-6 text-white transition",
+          @active && "bg-[#2C1320] text-poker-gold shadow-inner hover:bg-[#2C1320] hover:text-poker-gold",
+          not @active && "text-white hover:bg-white/10 hover:text-poker-gold"
         ]}
         {@rest}
       >
-        <div :if={@icon} class={[@active && "text-indigo-600", not @active && "text-gray-400 group-hover:text-indigo-600"]}>
-          <.icon name={@icon} class="h-6 w-6" aria-hidden="true" />
+        <div :if={@icon} class={[@active && "text-poker-gold", not @active && "text-[#E2E6EF] group-hover:text-poker-gold"]}>
+          <span :if={@icon == "poker-chips"} class="relative block h-6 w-6" aria-hidden="true">
+            <span class="border-[3px] border-[#F4D36A] bg-[#A9812C] absolute top-1 left-0 h-5 w-5 rounded-full border-dashed shadow-sm"></span>
+            <span class="border-[3px] border-[#FFF0B4] bg-[#D8B45A] absolute top-0 right-0 h-5 w-5 rounded-full border-dashed shadow-sm">
+              <span class="inset-[3px] border-[#A9812C]/70 absolute rounded-full border"></span>
+            </span>
+          </span>
+          <.icon :if={@icon != "poker-chips"} name={@icon} class={["h-6 w-6", @icon_class]} aria-hidden="true" />
         </div>
 
         <span
           :if={is_nil(@icon)}
-          class="text-[0.625rem] flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border border-gray-200 bg-white font-medium text-gray-400 group-hover:border-indigo-600 group-hover:text-indigo-600"
+          class="text-[0.625rem] border-white/30 bg-white/10 flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border font-medium text-white group-hover:border-poker-gold group-hover:text-poker-gold"
         >
           <%= String.first(@title) %>
         </span>
 
-        <%= @title %>
+        <span :if={@emphasis} class="font-extrabold"><%= @title %></span>
+        <%= if @emphasis, do: nil, else: @title %>
       </.link>
     </li>
     """

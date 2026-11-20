@@ -1,26 +1,45 @@
-<article class="min-h-dvh m-auto my-4 flex max-w-sm flex-col bg-white p-8 md:justify-center">
-  <% score = get_score(@user_lesson) %>
-  <% perfect? = score == 10.0 %>
+<article class="min-h-dvh border-white/10 bg-[#351B2B] shadow-black/30 m-auto my-4 flex max-w-sm flex-col rounded-3xl border p-8 text-white shadow-2xl md:justify-center">
+  <% poker_lesson? = @poker_metrics.action_count + @poker_metrics.ranking_count > 0 %>
 
-  <img src={score_image(score)} alt={dgettext("courses", "Illustration of a green alien")} class="w-1/4" />
-
-  <div class="my-4 flex justify-between gap-4">
-    <div>
-      <h1 class="font-semibold text-gray-900"><%= score_title(score) %></h1>
-
-      <div class="text-sm text-gray-500">
-        <p :if={perfect?}><%= dgettext("courses", "You got all the answers correct!") %></p>
-        <p :if={!perfect?}><%= dgettext("courses", "You got %{correct} out of %{total} answers right.", correct: @user_lesson.correct, total: @user_lesson.total) %></p>
-      </div>
-    </div>
-
-    <.badge color={badge_color(score)}><%= score %></.badge>
+  <div :if={poker_lesson?} class="bg-poker-gold/15 text-poker-gold mb-5 flex h-14 w-14 items-center justify-center rounded-2xl">
+    <.icon name="tabler-check" class="h-8 w-8" />
   </div>
 
-  <.link_button color={:primary} class="mt-8 w-full" navigate={~p"/c/#{@course.slug}"}>
-    <%= dgettext("courses", "Back to the course") %>
-  </.link_button>
+  <div :if={!poker_lesson?}>
+    <% score = get_score(@user_lesson) %>
+    <img src={score_image(score)} alt={dgettext("courses", "Illustration of a green alien")} class="w-1/4" />
+    <div class="my-4 flex justify-between gap-4">
+      <div>
+        <h1 class="font-semibold text-gray-900"><%= score_title(score) %></h1>
+        <div class="text-sm text-gray-500">
+          <p :if={score == 10.0}><%= dgettext("courses", "You got all the answers correct!") %></p>
+          <p :if={score != 10.0}><%= dgettext("courses", "You got %{correct} out of %{total} answers right.", correct: @user_lesson.correct, total: @user_lesson.total) %></p>
+        </div>
+      </div>
+      <.badge color={badge_color(score)}><%= score %></.badge>
+    </div>
+  </div>
+
+  <div :if={poker_lesson?}>
+    <h1 class="text-2xl font-bold text-white">Lesson complete</h1>
+    <p class="text-[#A7ADC6] mt-2 text-sm leading-6">Here’s a summary of the questions you answered. A reasonable alternative can earn partial credit.</p>
+    <div class="mt-5 space-y-3">
+      <div :if={@poker_metrics.action_count > 0} class="border-white/10 bg-[#2C1320] rounded-xl border p-4">
+        <p class="text-poker-gold text-sm font-semibold">Action decisions</p>
+        <p class="text-[#A7ADC6] mt-1 text-sm"><%= @poker_metrics.action_count %> answered · average rubric score <%= @poker_metrics.action_average %>/100</p>
+      </div>
+      <div :if={@poker_metrics.ranking_count > 0} class="border-white/10 bg-[#2C1320] rounded-xl border p-4">
+        <p class="text-poker-gold text-sm font-semibold">Hand-ranking questions</p>
+        <p class="text-[#A7ADC6] mt-1 text-sm"><%= @poker_metrics.ranking_correct %> of <%= @poker_metrics.ranking_count %> correct</p>
+      </div>
+    </div>
+    <p class="text-[#8797AF] mt-4 text-xs leading-5">Strategy scores follow the stated assumptions and are not a measure of real-world results.</p>
+  </div>
+
+  <.link_button :if={@next_lesson} color={:primary} class="mt-8 w-full" navigate={~p"/c/#{@course.slug}/#{@next_lesson.id}"}>Continue to next lesson</.link_button>
+  <.link_button :if={is_nil(@next_lesson)} color={:primary} class="mt-8 w-full" navigate={~p"/home"}>Back to Home</.link_button>
 </article>
 
-<audio :if={@current_user.sound_effects? && win?(score)} src={~p"/audios/win.mp3"} autoplay class="hidden" />
-<audio :if={@current_user.sound_effects? && not win?(score)} src={~p"/audios/loss.mp3"} autoplay class="hidden" />
+<% score = get_score(@user_lesson) %>
+<audio :if={not poker_lesson? && @current_user.sound_effects? && win?(score)} src={~p"/audios/win.mp3"} autoplay class="hidden" />
+<audio :if={not poker_lesson? && @current_user.sound_effects? && not win?(score)} src={~p"/audios/loss.mp3"} autoplay class="hidden" />
