@@ -49,12 +49,12 @@ defmodule ZoonkWeb.UploadSyncTests do
 
       assert has_element?(lv, ~s|li[aria-current=page] a:fl-icontains("profile")|)
       assert has_element?(lv, ~s|li[aria-current=page] a:fl-icontains("avatar")|)
-      assert has_element?(lv, ~s|button[phx-value-avatar="/images/poker/suits/spade.png"]|)
+      assert has_element?(lv, ~s|button[phx-value-avatar="/images/poker/characters/hero.png"]|)
       refute has_element?(lv, "#upload-form-user_avatar")
 
-      lv |> element(~s|button[phx-value-avatar="/images/poker/suits/spade.png"]|) |> render_click()
+      lv |> element(~s|button[phx-value-avatar="/images/poker/characters/hero.png"]|) |> render_click()
 
-      assert Accounts.get_user!(user.id).avatar == "/images/poker/suits/spade.png"
+      assert Accounts.get_user!(user.id).avatar == "/images/poker/characters/hero.png"
       assert render(lv) =~ "Selected"
     end
 

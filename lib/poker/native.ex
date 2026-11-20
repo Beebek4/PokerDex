@@ -13,8 +13,19 @@ defmodule Zoonk.Poker.Native.GameView do
           bot_stack: float(),
           winner: non_neg_integer() | nil,
           is_tie: boolean(),
+          winners: [non_neg_integer()],
+          player_best_fives: [[String.t()]],
           hero_cards: [String.t()],
           bot_cards: [String.t()],
+          bot_private_cards: [String.t()],
+          player_stacks: [float()],
+          player_hole_cards: [[String.t()]],
+          player_contributions: [float()],
+          player_folded: [boolean()],
+          player_all_in: [boolean()],
+          dealer_idx: non_neg_integer(),
+          small_blind_idx: non_neg_integer(),
+          big_blind_idx: non_neg_integer(),
           board: [String.t()],
           best_five: [String.t()]
         }
@@ -31,8 +42,19 @@ defmodule Zoonk.Poker.Native.GameView do
     :bot_stack,
     :winner,
     :is_tie,
+    :winners,
+    :player_best_fives,
     :hero_cards,
     :bot_cards,
+    :bot_private_cards,
+    :player_stacks,
+    :player_hole_cards,
+    :player_contributions,
+    :player_folded,
+    :player_all_in,
+    :dealer_idx,
+    :small_blind_idx,
+    :big_blind_idx,
     :board,
     :best_five
   ]
@@ -40,11 +62,11 @@ end
 
 defmodule Zoonk.Poker.Native do
   @moduledoc """
-  Temporary integration spike for evaluating the `rs-poker` Rust crate.
+  Rustler adapter for the `rs-poker` Hold'em engine.
 
-  This module is isolated from the Play UI and existing puzzle rules. The current
-  human-turn API covers a simple heads-up check/call hand through showdown;
-  it is not production gameplay.
+  The Play LiveView owns the match flow and asks a shared application policy
+  for each bot decision through `player_action/4`. The engine owns hand state,
+  blind positions, multiway actions, all-ins, side pots, and showdown payouts.
   """
 
   use Rustler, otp_app: :zoonk, crate: :poker_native
@@ -66,7 +88,21 @@ defmodule Zoonk.Poker.Native do
   @spec start_human_hand(float(), float()) :: {term(), GameView.t()}
   def start_human_hand(_hero_total, _bot_total), do: :erlang.nif_error(:nif_not_loaded)
 
+  @doc "Starts a heads-up hand using the selected match's stacks and blinds."
+  @spec start_play_hand(float(), float(), float(), float()) :: {term(), GameView.t()}
+  def start_play_hand(_hero_total, _bot_total, _small_blind, _big_blind), do: :erlang.nif_error(:nif_not_loaded)
+
+  @spec start_play_hand_with_button(float(), float(), float(), float(), non_neg_integer()) :: {term(), GameView.t()}
+  def start_play_hand_with_button(_hero_total, _bot_total, _small_blind, _big_blind, _dealer_idx), do: :erlang.nif_error(:nif_not_loaded)
+
+  @spec start_tournament_hand([float()], non_neg_integer(), float(), float()) :: {term(), GameView.t()}
+  def start_tournament_hand(_stacks, _dealer_idx, _small_blind, _big_blind), do: :erlang.nif_error(:nif_not_loaded)
+
   @doc "Applies a fold, check, call, or raise and advances the call/check bot through the hand."
   @spec human_action(term(), String.t(), float()) :: GameView.t()
   def human_action(_session, _action, _amount), do: :erlang.nif_error(:nif_not_loaded)
+
+  @doc "Applies one actor's action and returns the next decision point without choosing for a bot."
+  @spec player_action(term(), non_neg_integer(), String.t(), float()) :: GameView.t()
+  def player_action(_session, _actor, _action, _amount), do: :erlang.nif_error(:nif_not_loaded)
 end

@@ -2,15 +2,28 @@
   <section class="play-journey-screen" aria-labelledby="play-journey-title">
     <div class="play-journey-content">
       <div class="play-journey-heading">
-        <p class="play-journey-eyebrow">THE POKERDEX CIRCUIT</p>
+        <p class="play-journey-eyebrow">THE POKERDEX MAP</p>
         <h1 id="play-journey-title">Choose your next challenge</h1>
-        <p>Beat each opponent to win their buy-in. Respect unlocks the next match.</p>
-        <p class="play-campaign-note">Play chips only · no real-money value</p>
+        <p :if={@preview_all_opponents}>Visual preview mode · all opponents unlocked · match results are not saved.</p>
+        <p :if={!@preview_all_opponents}>Beat each opponent to win chips and respect. Respect unlocks new opponents.</p>
+      </div>
+
+      <div :if={@unresumable_match} class="border-[#A7ADC6]/30 bg-[#2C1320]/90 rounded-2xl border p-4 text-left shadow-lg sm:p-5" role="status">
+        <h2 class="text-base font-bold text-white sm:text-lg">Your previous match can’t be resumed</h2>
+        <p class="text-[#D3CDDA] mt-1 text-sm">The hand is kept in memory while you play. Refund its entry to leave it safely and start another match.</p>
+        <button
+          type="button"
+          phx-click="refund-pending-match"
+          phx-disable-with="Refunding…"
+          class="bg-poker-gold text-[#2C1320] min-h-10 mt-3 rounded-xl px-4 text-sm font-bold transition hover:bg-poker-gold-light"
+        >
+          Refund entry and start fresh
+        </button>
       </div>
 
       <section
         :for={location <- @journey_locations}
-        class={["play-location", location.id == "home" && "play-location--home"]}
+        class={["play-location", location.id == "home" && "play-location--home", location.id == "house-tournament" && "play-location--tournament"]}
         aria-labelledby={"location-#{location.id}"}
       >
         <header class="play-location-heading">
@@ -34,62 +47,115 @@
             <div class={["play-route-pin", opponent.status == :open && "is-open"]} aria-hidden="true">
               <.icon :if={opponent.status == :locked} name="tabler-lock" class="h-5 w-5" />
             </div>
-            <img :if={opponent.id == "teddy"} src={~p"/images/poker/characters/teddy.png"} alt="" class="play-route-teddy" />
+            <button
+              :if={opponent.status == :open}
+              type="button"
+              phx-click="start-match"
+              phx-value-opponent-id={opponent.id}
+              disabled={not is_nil(@unresumable_match)}
+              aria-label={"Play #{opponent.name}"}
+              class={["play-route-character-trigger", not is_nil(@unresumable_match) && "cursor-not-allowed opacity-50"]}
+            >
+              <img
+                src={character_image_path(opponent.id)}
+                alt=""
+                class={[
+                  "play-route-character-image",
+                  map_flipped_character?(opponent.id) && "play-route-character-image--flipped",
+                  opponent.id == "teddy" && "play-route-teddy"
+                ]}
+              />
+            </button>
+            <div :if={opponent.status == :locked} class="play-route-character-trigger" aria-hidden="true">
+              <img
+                src={character_image_path(opponent.id)}
+                alt=""
+                class={[
+                  "play-route-character-image",
+                  map_flipped_character?(opponent.id) && "play-route-character-image--flipped",
+                  opponent.id == "teddy" && "play-route-teddy"
+                ]}
+              />
+            </div>
 
-            <button :if={opponent.status == :open} type="button" phx-click="start-match" class="play-route-card is-open">
+            <article :if={opponent.status == :open} class="play-route-card is-open">
               <span class="play-route-label"><%= opponent.level %></span>
               <strong><%= opponent.name %></strong>
               <span class="play-route-economy">
                 <%= if opponent.buy_in == 0 do %>
                   Free warm-up · Win <%= opponent.respect_reward %> Respect
                 <% else %>
-                  Buy-in <%= chip_text(opponent.buy_in) %> · <%= opponent.blinds %> blinds
+                  Buy-in <%= chip_text(opponent.buy_in) %> · <%= blinds_text(opponent) %> blinds
                 <% end %>
               </span>
-              <span :if={opponent.buy_in > 0} class="play-route-requirement">Needs <%= opponent.respect_required %> Respect</span>
-              <span class="play-route-opponent"><%= opponent.personality %> · <%= opponent.style %></span>
+              <span :if={opponent.buy_in > 0} class="play-route-requirement"><%= opponent.lock_reason %></span>
+              <span class="play-route-opponent"><%= opponent.personality %> · <%= opponent.style %> · <%= difficulty_label(opponent) %></span>
               <span class="play-route-preview"><%= opponent.preview %></span>
-              <span class="play-route-cta">Play <%= opponent.name %> <.icon name="tabler-arrow-right" class="h-4 w-4" /></span>
-            </button>
+            </article>
 
             <article :if={opponent.status == :locked} class="play-route-card is-locked">
               <span class="play-route-label"><%= opponent.level %></span>
               <strong><%= opponent.name %></strong>
-              <span class="play-route-economy">Buy-in <%= chip_text(opponent.buy_in) %> · <%= opponent.blinds %> blinds</span>
-              <span class="play-route-requirement">Needs <%= opponent.respect_required %> Respect</span>
-              <span class="play-route-opponent"><%= opponent.personality %> · <%= opponent.style %></span>
+              <span class="play-route-economy">Buy-in <%= chip_text(opponent.buy_in) %> · <%= blinds_text(opponent) %> blinds</span>
+              <span class="play-route-requirement"><%= opponent.lock_reason %></span>
+              <span class="play-route-opponent"><%= opponent.personality %> · <%= opponent.style %> · <%= difficulty_label(opponent) %></span>
               <span class="play-route-preview"><%= opponent.preview %></span>
             </article>
           </div>
         </div>
 
-        <article :if={location.id == "house-tournament"} class="play-tournament-stop" aria-label="House Tournament, locked until the home matches are complete">
-          <span class="play-tournament-pin" aria-hidden="true"><.icon name="tabler-lock" class="h-6 w-6" /></span>
+        <article
+          :if={location.id == "house-tournament"}
+          class={["play-tournament-stop", location.status == :open && "is-open"]}
+          aria-label={"#{location.name}, #{location.status}"}
+        >
+          <span class="play-tournament-pin" aria-hidden="true">
+            <.icon :if={location.status == :locked} name="tabler-lock" class="h-6 w-6" />
+            <img :if={location.status == :open} src={~p"/images/poker/bracelets/garage_bracelet.png"} alt="" class="play-tournament-bracelet" />
+          </span>
           <div>
-            <span class="play-route-label">LOCKED · AFTER DAD</span>
-            <strong>Final event</strong>
+            <span class="play-route-label">
+              <%= if @preview_all_opponents,
+                do: "PREVIEW ACCESS · MULTIWAY TABLE",
+                else: if(location.requirements_met?, do: "COMING NEXT · MULTIWAY TABLE", else: "LOCKED · AFTER DAD") %>
+            </span>
+            <strong><%= location.name %></strong>
             <span class="play-route-economy">Entry <%= chip_text(location.buy_in) %> chips</span>
-            <span class="play-route-requirement">Needs <%= location.respect_required %> Respect</span>
+            <span class="play-route-requirement">
+              <%= if @preview_all_opponents,
+                do: "Preview mode · results are not saved",
+                else:
+                  if(location.requirements_met?, do: "Chips and Respect collected", else: "Needs #{location.respect_required} Respect and #{chip_text(location.buy_in)} chips") %>
+            </span>
             <span class="play-route-opponent"><%= location.personality %> · <%= location.style %></span>
             <span class="play-route-preview"><%= location.preview %></span>
+            <button
+              :if={location.status == :open}
+              type="button"
+              phx-click="start-tournament"
+              disabled={not is_nil(@unresumable_match)}
+              class={["play-tournament-action-button", not is_nil(@unresumable_match) && "cursor-not-allowed opacity-50"]}
+            >
+              Play tournament
+            </button>
           </div>
         </article>
       </section>
 
-      <p class="play-route-footnote">Win a cash match to collect the opponent’s buy-in. The tournament needs 2,500 chips and 6 Respect.</p>
+      <p class="play-route-footnote">Win a match to collect chips. The tournament needs 2,500 chips and 6 Respect.</p>
     </div>
   </section>
 <% else %>
   <section class="play-shell" aria-label="Poker game">
     <header class="play-topbar">
-      <h1 class="sr-only">Heads-up table</h1>
-      <button type="button" phx-click="back-to-journey" class="play-exit" aria-label="Return to bot journey">
+      <h1 class="sr-only"><%= if @is_tournament, do: "Garage Tournament", else: "Heads-up table" %></h1>
+      <button type="button" phx-click="back-to-journey" class="play-exit" aria-label="Return to map">
         <.icon name="tabler-chevron-left" class="h-5 w-5" />
-        <span class="hidden sm:inline">Bot journey</span>
+        <span class="hidden sm:inline">Map</span>
       </button>
 
       <div class="flex min-w-0 items-center gap-2">
-        <span class="font-semibold tracking-tight">Teddy</span>
+        <span class="font-semibold tracking-tight"><%= @opponent.name %></span>
         <span class="text-white/50">·</span>
         <span class="text-white/75 truncate text-sm"><%= @game_view.round %></span>
       </div>
@@ -99,47 +165,36 @@
 
     <div class="play-table-area">
       <div class="play-backdrop" aria-hidden="true">
-        <img src={~p"/images/poker/backgrounds/livingroom_background.png"} alt="" class="h-full w-full object-cover" />
+        <img :if={@is_tournament} src={~p"/images/poker/backgrounds/garage_storybook_landscape.png"} alt="" class="h-full w-full object-cover" />
+        <img :if={!@is_tournament} src={~p"/images/poker/backgrounds/livingroom_background.png"} alt="" class="h-full w-full object-cover" />
       </div>
 
-      <div class="play-table-stage">
+      <div class={["play-table-stage", @is_tournament && "play-table-stage--tournament"]}>
         <aside class="play-player-panel" aria-label="Your player status">
-          <div class="play-avatar play-avatar--character play-avatar--hero" aria-hidden="true">
-            <img src={~p"/images/poker/characters/hero.png"} alt="" />
+          <div
+            class={["play-avatar play-avatar--character play-avatar--hero", @is_tournament && "play-avatar--hero-tournament", player_character_class(@current_user)]}
+            aria-hidden="true"
+          >
+            <img src={player_character_path(@current_user)} alt="" />
           </div>
           <span class="play-player-name">You</span>
-          <div class="play-health-shell">
-            <progress
-              class="play-health-track"
-              aria-label="Your remaining chips"
-              aria-valuemin="0"
-              aria-valuemax="200"
-              aria-valuenow={round(@hero_health_chips)}
-              aria-valuetext={"#{chip_text(@hero_health_chips)} chips"}
-              max="100"
-              value={PokerHealth.green_width(@hero_health_chips)}
-            >
-            </progress>
-            <progress
-              :if={PokerHealth.gold_width(@hero_health_chips) > 0}
-              class="play-health-overflow"
-              max="100"
-              value={PokerHealth.gold_width(@hero_health_chips)}
-              aria-hidden="true"
-            >
-            </progress>
-          </div>
-          <span class="play-player-stack"><span class="play-stack-chip" aria-hidden="true"></span><%= chip_text(@game_view.hero_stack) %></span>
+          <span class="play-player-role"><%= role_text(@game_view, 0) %></span>
+          <% hero_all_in? = @game_view.round != "Complete" and Enum.at(@game_view.player_all_in, 0, false) %>
+          <span :if={@game_view.hero_stack > 0} class="play-player-stack">
+            <span class="play-stack-chip" aria-hidden="true"></span><%= chip_text(@game_view.hero_stack) %>
+          </span>
+          <span :if={hero_all_in?} class="play-player-status is-all-in">ALL IN</span>
+          <span :if={@game_view.hero_stack <= 0 and not hero_all_in?} class="play-player-status">OUT</span>
         </aside>
 
-        <div class="play-table" role="region" aria-label="Heads-up poker table">
+        <div class="play-table" role="region" aria-label={if @is_tournament, do: "Garage Tournament poker table", else: "Heads-up poker table"}>
           <img src={~p"/images/poker/tables/poker_table1.png"} alt="" class="pointer-events-none absolute inset-0 h-full w-full select-none object-cover" />
 
-          <div class="left-[82%] top-[42%] w-[18%] absolute z-10 flex items-center justify-center">
-            <div :if={@game_view.bot_cards == []} class="opponent-card-back max-w-[6.5rem] w-full" role="img" aria-label="Teddy's hole cards face down">
+          <div :if={!@is_tournament} class="left-[82%] top-[42%] w-[18%] absolute z-10 flex items-center justify-center">
+            <div :if={@game_view.bot_cards == []} class="opponent-card-back max-w-[6.5rem] w-full" role="img" aria-label={"#{@opponent.name}'s hole cards face down"}>
               <img src={~p"/images/poker/opp_cards.png"} alt="" class="h-full w-full object-contain" />
             </div>
-            <div :if={@game_view.bot_cards != []} class="gap-[2%] grid w-full grid-cols-2" role="group" aria-label="Teddy's hole cards revealed">
+            <div :if={@game_view.bot_cards != []} class="gap-[2%] grid w-full grid-cols-2" role="group" aria-label={"#{@opponent.name}'s hole cards revealed"}>
               <.playing_card :for={card <- @game_view.bot_cards} id={"hand-#{@hand_id}-bot-card-#{card}"} card={card} highlight={card in @game_view.best_five} />
             </div>
           </div>
@@ -154,14 +209,14 @@
               id={"hand-#{@hand_id}-board-card-#{index}-#{card}"}
               delay={if(index < 3, do: index * 65, else: 0)}
               card={card}
-              highlight={card in @game_view.best_five}
+              highlight={card in Enum.flat_map(@game_view.player_best_fives, & &1)}
             />
           </div>
 
-          <.pot_display id={"hand-#{@hand_id}-pot-#{@game_view.pot}"} amount={chip_text(@game_view.pot)} pot={@game_view.pot} />
+          <.pot_display id={"hand-#{@hand_id}-pot-#{@game_view.pot}"} amount={chip_text(@game_view.pot)} pot={@game_view.pot} initial_buy_in={@match_start_chips} />
 
           <div
-            class="top-[42%] w-[18%] gap-[2%] absolute left-0 z-10 grid grid-cols-2"
+            class={["play-hero-hole-cards", @is_tournament && "play-hero-hole-cards--tournament"]}
             role="group"
             aria-label={"Your hand: #{Enum.map_join(@game_view.hero_cards, ", ", &card_label/1)}"}
           >
@@ -174,42 +229,76 @@
             />
           </div>
 
-          <span
-            class="left-[21%] top-[59%] aspect-square w-[5%] text-[8px] absolute z-20 flex items-center justify-center rounded-full border border-amber-900 bg-amber-300 font-black text-amber-950 shadow-md sm:text-xs"
-            role="img"
-            aria-label="Dealer button · You"
+          <div
+            :for={seat <- @tournament_seats}
+            :if={@is_tournament && !Enum.at(@game_view.player_folded, tournament_player_index(@tournament_players, seat.opponent.id), false)}
+            class={["play-tournament-hole-position", "play-tournament-hole-position--#{seat.position}"]}
+            role="group"
+            aria-label={"#{seat.opponent.name}'s hole cards"}
           >
-            D
-          </span>
+            <% seat_idx = tournament_player_index(@tournament_players, seat.opponent.id) %>
+            <div :if={Enum.at(@game_view.player_hole_cards, seat_idx, []) == []} class="opponent-card-back play-tournament-hole-back" aria-hidden="true">
+              <img src={~p"/images/poker/opp_cards.png"} alt="" />
+            </div>
+            <div :if={Enum.at(@game_view.player_hole_cards, seat_idx, []) != []} class="play-tournament-hole-cards">
+              <.playing_card
+                :for={card <- Enum.at(@game_view.player_hole_cards, seat_idx, [])}
+                id={"hand-#{@hand_id}-tournament-#{seat_idx}-#{card}"}
+                card={card}
+                highlight={card in Enum.at(@game_view.player_best_fives, seat_idx, [])}
+              />
+            </div>
+          </div>
         </div>
 
-        <aside class="play-player-panel" aria-label="Teddy's player status">
-          <div class="play-avatar play-avatar--character" aria-hidden="true">
-            <img src={~p"/images/poker/characters/teddy.png"} alt="" />
+        <aside :if={!@is_tournament} class={["play-player-panel", "play-player-panel--opponent--#{@opponent.id}"]} aria-label={"#{@opponent.name}'s player status"}>
+          <div
+            class={[
+              "play-avatar play-avatar--character play-avatar--opponent",
+              "play-avatar--opponent--#{@opponent.id}",
+              game_flipped_character?(@opponent.id) && "play-avatar--opponent--flipped"
+            ]}
+            aria-hidden="true"
+          >
+            <img src={character_image_path(@opponent.id)} alt="" />
           </div>
-          <span class="play-player-name">Teddy</span>
-          <div class="play-health-shell play-health-shell--opponent">
-            <progress
-              class="play-health-track"
-              aria-label="Opponent remaining chips"
-              aria-valuemin="0"
-              aria-valuemax="200"
-              aria-valuenow={round(@bot_health_chips)}
-              aria-valuetext={"#{chip_text(@bot_health_chips)} chips"}
-              max="100"
-              value={PokerHealth.green_width(@bot_health_chips)}
-            >
-            </progress>
-            <progress
-              :if={PokerHealth.gold_width(@bot_health_chips) > 0}
-              class="play-health-overflow play-health-overflow--opponent"
-              max="100"
-              value={PokerHealth.gold_width(@bot_health_chips)}
-              aria-hidden="true"
-            >
-            </progress>
-          </div>
-          <span class="play-player-stack"><span class="play-stack-chip" aria-hidden="true"></span><%= chip_text(@game_view.bot_stack) %></span>
+          <span class="play-player-name"><%= @opponent.name %></span>
+          <span class="play-player-role"><%= role_text(@game_view, 1) %></span>
+          <% opponent_stack = Enum.at(@game_view.player_stacks, 1, @game_view.bot_stack) %>
+          <% opponent_all_in? = @game_view.round != "Complete" and Enum.at(@game_view.player_all_in, 1, false) %>
+          <span :if={opponent_stack > 0} class="play-player-stack">
+            <span class="play-stack-chip" aria-hidden="true"></span><%= chip_text(opponent_stack) %>
+          </span>
+          <span :if={opponent_all_in?} class="play-player-status is-all-in">ALL IN</span>
+          <span :if={opponent_stack <= 0 and not opponent_all_in?} class="play-player-status">OUT</span>
+        </aside>
+
+        <div :if={@is_tournament} class="play-tournament-side-reserve" aria-hidden="true"></div>
+
+        <aside
+          :for={seat <- @tournament_seats}
+          :if={@is_tournament}
+          class={[
+            "play-tournament-live-seat",
+            "play-tournament-seat--#{seat.position}",
+            Enum.at(@game_view.player_stacks, tournament_player_index(@tournament_players, seat.opponent.id), 0) <= 0 &&
+              (@game_view.round == "Complete" || !Enum.at(@game_view.player_all_in, tournament_player_index(@tournament_players, seat.opponent.id), false)) && "is-eliminated",
+            Enum.at(@game_view.player_folded, tournament_player_index(@tournament_players, seat.opponent.id), false) && "is-folded",
+            @game_view.round != "Complete" && Enum.at(@game_view.player_all_in, tournament_player_index(@tournament_players, seat.opponent.id), false) && "is-all-in"
+          ]}
+          aria-label={"#{seat.opponent.name}'s tournament seat"}
+        >
+          <% seat_idx = tournament_player_index(@tournament_players, seat.opponent.id) %>
+          <% seat_stack = Enum.at(@game_view.player_stacks, seat_idx, 0) %>
+          <% seat_all_in? = @game_view.round != "Complete" and Enum.at(@game_view.player_all_in, seat_idx, false) %>
+          <img src={character_image_path(seat.opponent.id)} alt="" />
+          <strong><%= seat.opponent.name %></strong>
+          <span class="play-tournament-seat-role"><%= role_text(@game_view, seat_idx) %></span>
+          <span :if={seat_stack > 0} class="play-player-stack">
+            <span class="play-stack-chip" aria-hidden="true"></span><%= chip_text(seat_stack) %>
+          </span>
+          <span :if={seat_all_in?} class="play-tournament-seat-status is-all-in">ALL IN</span>
+          <span :if={seat_stack <= 0 and not seat_all_in?} class="play-tournament-seat-status">OUT</span>
         </aside>
       </div>
     </div>
@@ -227,7 +316,7 @@
             <ul class="play-street-actions">
               <li :for={action <- actions_for_street(@action_history, street)} class="play-street-action" title={if action, do: "#{action.actor}: #{action.text}", else: nil}>
                 <span :if={action} class={if action.actor == "You", do: "play-history-hero", else: "play-history-bot"} aria-hidden="true">
-                  <%= if action.actor == "You", do: "YOU", else: "BOT" %>
+                  <%= if action.actor == "You", do: "YOU", else: action.actor %>
                 </span>
                 <span :if={action} class="play-street-action-text"><%= action.text %></span>
                 <span :if={is_nil(action)} class="play-street-empty" aria-hidden="true">—</span>
@@ -242,6 +331,7 @@
       </div>
 
       <div class="play-status" role="status" aria-live="polite">
+        <p :if={@bot_thinking} class="play-thinking-message"><%= @bot_thinking_name || @opponent.name %> is thinking…</p>
         <p :if={@game_message} class={[@game_view.round == "Complete" && "play-result-message", "text-[#E2DCE5]"]}><%= @game_message %></p>
         <p :if={@game_error} class="text-rose-200"><%= @game_error %></p>
       </div>

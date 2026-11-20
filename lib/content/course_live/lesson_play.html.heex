@@ -23,7 +23,11 @@
     <p :if={!@puzzle_mode?} class="text-[#A7ADC6] mx-auto mt-2 max-w-3xl text-xs font-medium"><%= @lesson.name %></p>
   </header>
 
-  <article class="mx-auto flex max-w-3xl flex-col items-center overflow-y-auto p-8 before:content-[''] before:flex-1 after:content-[''] after:flex-1 sm:px-16">
+  <article class={[
+    "mx-auto flex min-h-0 w-full flex-col items-center overflow-y-auto",
+    @puzzle_mode? && "max-w-6xl justify-start px-1 py-2 before:hidden after:hidden sm:px-4 sm:py-3",
+    !@puzzle_mode? && "max-w-3xl p-8 before:content-[''] before:flex-1 after:content-[''] after:flex-1 sm:px-16"
+  ]}>
     <.lesson_step step={@current_step} selected={@selected_option} />
 
     <section :if={@current_step.suggested_courses != []} class="grid grid-cols-2 gap-2 pt-8">

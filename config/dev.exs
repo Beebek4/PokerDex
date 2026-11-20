@@ -64,5 +64,9 @@ config :zoonk, ZoonkWeb.Endpoint,
     ]
   ]
 
+config :zoonk, :play_preview_all_opponents, true
+
 # Enable dev routes for dashboard and mailbox
 config :zoonk, dev_routes: true
+
+# Allows local visual review of every Home opponent without changing campaign progress.

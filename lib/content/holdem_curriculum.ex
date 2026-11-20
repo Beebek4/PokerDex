@@ -965,6 +965,10 @@ defmodule Zoonk.Content.HoldemCurriculum do
 
   defp puzzle_difficulty(_id), do: :beginner
 
+  defp puzzle_difficulty_label(:beginner), do: "easy"
+  defp puzzle_difficulty_label(:intermediate), do: "medium"
+  defp puzzle_difficulty_label(:advanced), do: "hard"
+
   defp action_question(id, prompt, position, street, hole_cards, board, contributions, street_bet, hero_contribution, actions, rubric, assumption) do
     seat = position_seat(position)
     contributions = normalized_contributions(street, contributions, seat, street_bet, hero_contribution)
@@ -973,7 +977,8 @@ defmodule Zoonk.Content.HoldemCurriculum do
     pot = Enum.sum(contributions)
 
     options =
-      Enum.map(actions, fn action ->
+      actions
+      |> Enum.map(fn action ->
         {score, feedback} = Map.fetch!(rubric, action)
 
         %{
@@ -984,12 +989,14 @@ defmodule Zoonk.Content.HoldemCurriculum do
           feedback: feedback
         }
       end)
+      |> limit_answer_options()
 
     scenario = %{
       "scenario_id" => id,
       "version" => if(id == "puzzle-preflop-1", do: 2, else: 1),
       "status" => "draft",
       "format" => "six_max_cash",
+      "difficulty" => puzzle_difficulty_label(puzzle_difficulty(id)),
       "table" => %{"seat_count" => 6, "button_seat" => 4, "players_in_hand" => 2},
       "hero" => %{
         "seat" => seat,
@@ -1024,7 +1031,8 @@ defmodule Zoonk.Content.HoldemCurriculum do
     option_categories = [:high_card, :one_pair, :two_pair, :three_of_a_kind, :straight, :flush, :full_house, :four_of_a_kind, :straight_flush]
 
     options =
-      Enum.map(option_categories, fn option_category ->
+      option_categories
+      |> Enum.map(fn option_category ->
         correct? = option_category == category
 
         %{
@@ -1035,12 +1043,14 @@ defmodule Zoonk.Content.HoldemCurriculum do
           feedback: if(correct?, do: rationale, else: "Review the five best cards together, then compare the hand category.")
         }
       end)
+      |> limit_answer_options()
 
     scenario = %{
       "scenario_id" => id,
       "version" => 1,
       "status" => "draft",
       "format" => "six_max_cash",
+      "difficulty" => puzzle_difficulty_label(puzzle_difficulty(id)),
       "table" => %{"seat_count" => 6, "button_seat" => 4, "players_in_hand" => 2},
       "hero" => %{
         "seat" => 4,
@@ -1132,6 +1142,16 @@ defmodule Zoonk.Content.HoldemCurriculum do
   defp score_label(30), do: "Questionable"
   defp score_label(_score), do: "Major error"
 
+  defp limit_answer_options(options) do
+    {correct, incorrect} = Enum.split_with(options, & &1.correct?)
+    correct = Enum.take(correct, 4)
+
+    case correct do
+      [] -> Enum.take(options, 4)
+      _ -> correct ++ Enum.take(incorrect, 4 - length(correct))
+    end
+  end
+
   defp category_title(:high_card), do: "High card"
   defp category_title(:one_pair), do: "One pair"
   defp category_title(:two_pair), do: "Two pair"
@@ -1166,27 +1186,27 @@ defmodule Zoonk.Content.HoldemCurriculum do
   end
 
   defp action_history("preflop", _position, street_bet) when street_bet > 1 do
-    ["An opponent raised to #{street_bet} big blinds; action is on Hero."]
+    ["Opponent raises to #{street_bet} BB", "Your turn"]
   end
 
   defp action_history("preflop", _position, _street_bet) do
-    ["The small and big blinds are posted; no one has entered voluntarily before Hero."]
+    ["Blinds posted", "Your turn"]
   end
 
   defp action_history("turn", _position, street_bet) when street_bet > 0 do
-    ["Preflop: Hero called. The flop checked through. An opponent bet #{street_bet} big blinds on the turn; action is on Hero."]
+    ["You call preflop", "Flop checks", "Opponent bets #{street_bet} BB", "Your turn"]
   end
 
   defp action_history(_street, "big_blind", _street_bet) do
-    ["Preflop: the button raised and Hero called. The flop action is on Hero."]
+    ["Button raises", "You call", "Your turn"]
   end
 
   defp action_history(_street, _position, street_bet) when street_bet > 0 do
-    ["Preflop: Hero raised and an opponent called. The opponent bet #{street_bet} big blinds; action is on Hero."]
+    ["You raise", "Opponent calls", "Opponent bets #{street_bet} BB", "Your turn"]
   end
 
   defp action_history(_street, _position, _street_bet) do
-    ["Preflop: Hero raised and an opponent called. The opponent checked to Hero."]
+    ["You raise", "Opponent calls", "Opponent checks", "Your turn"]
   end
 
   defp skill_tag("puzzle-preflop-" <> _), do: "preflop.fundamentals"

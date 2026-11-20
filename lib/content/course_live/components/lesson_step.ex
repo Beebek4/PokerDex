@@ -31,40 +31,43 @@ defmodule ZoonkWeb.Components.Content.LessonStep do
         <% scenario = @step.poker_scenario %>
         <% hero = scenario["hero"] || %{} %>
         <% table = scenario["table"] || %{} %>
-        <% question = scenario["question"] || %{} %>
         <% opponents = opponent_seats(hero["seat"], table["seat_count"]) %>
         <% dealer = dealer_seat(hero["seat"], table["button_seat"], table["seat_count"]) %>
+        <% actions = puzzle_action_summary(scenario) %>
+        <% difficulty = puzzle_difficulty_label(scenario["difficulty"] || scenario["scenario_id"]) %>
 
-        <div class="border-poker-gold/25 from-[#24101A] to-[#453047] border-b bg-gradient-to-r px-5 py-4 text-white sm:px-6">
-          <div class="flex flex-wrap items-center justify-between gap-2">
-            <p class="text-[#D8DCE8] text-xs font-semibold uppercase tracking-wider">Six-handed cash · fictional big blinds</p>
-            <div class="flex flex-wrap items-center gap-2">
-              <span :if={scenario["status"] == "draft"} class="bg-amber-300/20 rounded-full px-3 py-1 text-xs font-medium text-amber-100">Draft content · review pending</span>
-              <span class="bg-white/10 rounded-full px-3 py-1 text-xs font-medium"><%= String.capitalize(scenario["street"] || "") %></span>
-            </div>
+        <div class="puzzle-scenario-header">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="puzzle-scenario-tag puzzle-scenario-tag--street"><%= String.capitalize(scenario["street"] || "") %></span>
+            <span class={["puzzle-scenario-tag", puzzle_difficulty_class(difficulty)]}><%= difficulty %></span>
           </div>
-          <h2 class="mt-2 text-lg font-bold sm:text-xl"><%= question["prompt"] || @step.content %></h2>
+          <p class="puzzle-scenario-actions"><%= Enum.join(actions, "  →  ") %></p>
         </div>
 
-        <div class="space-y-5 p-5 sm:p-6">
-          <div class="grid grid-cols-2 gap-3 sm:grid-cols-5">
-            <.scenario_stat label="Pot" value={amount(scenario["pot"])} />
-            <.scenario_stat label="To call" value={amount(get_in(scenario, ["action_state", "amount_to_call_bb"]) || 0)} />
-            <.scenario_stat label="Your stack" value={amount(hero["remaining_stack_bb"])} />
-            <.scenario_stat label="Effective stack" value={amount(scenario["effective_stack_bb"])} />
-            <div class="border-[#8797AF] bg-[#56667A] rounded-xl border p-3 text-white">
-              <p class="text-xs font-medium text-white">Position</p>
-              <p class="mt-1 font-semibold"><%= position_label(hero["position"]) %></p>
-            </div>
-          </div>
+        <div class="p-1 sm:p-2">
+          <div class="border-white/10 bg-[#2C1320] rounded-2xl border p-1 sm:p-2">
+            <div class="aspect-square max-w-[640px] relative mx-auto w-full overflow-hidden" aria-label={"Poker table · #{table["players_in_hand"]} players in hand"}>
+              <img src={~p"/images/poker/tables/poker_table1.png"} alt="" class="pointer-events-none absolute inset-0 h-full w-full select-none object-contain" />
 
-          <div class="border-white/10 bg-[#2C1320] rounded-2xl border p-3 sm:p-5">
-            <div class="aspect-square max-w-[500px] relative mx-auto w-full overflow-hidden" aria-label={"Poker table · #{table["players_in_hand"]} players in hand"}>
-              <img src={~p"/images/poker/pokertable-removebg-preview.png"} alt="" class="pointer-events-none absolute inset-0 h-full w-full select-none object-contain" />
+              <div class="puzzle-table-marker left-[8%] top-[57%] absolute z-20" aria-label={"Effective stack: #{amount(scenario["effective_stack_bb"])} big blinds"}>
+                <span>EFF</span><strong><%= amount(scenario["effective_stack_bb"]) %> BB</strong>
+              </div>
+
+              <div
+                class="puzzle-table-marker right-[8%] top-[57%] absolute z-20"
+                aria-label={"To call: #{amount(get_in(scenario, ["action_state", "amount_to_call_bb"]) || 0)} big blinds"}
+              >
+                <span>CALL</span><strong><%= amount(get_in(scenario, ["action_state", "amount_to_call_bb"]) || 0) %> BB</strong>
+              </div>
+
+              <div class="puzzle-pot-display top-[55%] absolute inset-x-0 z-20 flex flex-col items-center" role="img" aria-label={"Pot: #{amount(scenario["pot"])} big blinds"}>
+                <img src={puzzle_pot_image_path(scenario["pot"])} alt="" class="puzzle-pot-art" />
+                <strong><%= amount(scenario["pot"]) %> BB</strong>
+              </div>
 
               <div
                 :for={opponent <- opponents}
-                class={["aspect-square w-[14%] absolute", opponent.cards_position]}
+                class={["aspect-square w-[11%] absolute", opponent.cards_position]}
                 role="group"
                 aria-label={"Opponent at seat #{opponent.seat}, cards face down"}
               >
@@ -72,7 +75,7 @@ defmodule ZoonkWeb.Components.Content.LessonStep do
               </div>
 
               <div
-                class="left-[14.6%] top-[37.8%] w-[71.4%] gap-[2.2%] absolute z-10 grid grid-cols-5"
+                class="left-[20%] top-[37.8%] w-[60%] gap-[2.2%] absolute z-10 grid grid-cols-5"
                 role="group"
                 aria-label={if (scenario["board"] || []) == [], do: "Community cards not dealt yet", else: "Community cards: #{cards_accessible(scenario["board"])}"}
               >
@@ -80,7 +83,7 @@ defmodule ZoonkWeb.Components.Content.LessonStep do
               </div>
 
               <div
-                class="left-[39%] top-[63.5%] w-[22%] gap-[2%] absolute z-10 grid grid-cols-2"
+                class="left-[41%] top-[70%] w-[18%] gap-[2%] absolute z-10 grid grid-cols-2"
                 role="group"
                 aria-label={"Hero · #{position_label(hero["position"])} · #{cards_accessible(hero["hole_cards"])}"}
               >
@@ -98,42 +101,14 @@ defmodule ZoonkWeb.Components.Content.LessonStep do
               >
                 D
               </span>
-            </div>
-          </div>
 
-          <div class="grid gap-4 sm:grid-cols-2">
-            <div>
-              <h3 class="text-sm font-semibold text-white">Blinds</h3>
-              <p class="text-[#A7ADC6] mt-1 text-sm"><%= amount(get_in(scenario, ["blinds", "small_blind"])) %> / <%= amount(get_in(scenario, ["blinds", "big_blind"])) %> BB</p>
+              <div class="puzzle-table-marker top-[88%] absolute left-1/2 z-20 -translate-x-1/2" aria-label={"Your stack: #{amount(hero["remaining_stack_bb"])} big blinds"}>
+                <span>YOU</span><strong><%= amount(hero["remaining_stack_bb"]) %> BB</strong>
+              </div>
             </div>
-            <div :if={(scenario["action_history"] || []) != []}>
-              <h3 class="text-sm font-semibold text-white">What happened</h3>
-              <ul class="text-[#A7ADC6] mt-1 space-y-1 text-sm">
-                <li :for={action <- scenario["action_history"]}><%= action %></li>
-              </ul>
-            </div>
-          </div>
-
-          <div :if={(scenario["assumptions"] || []) != []} class="border-[#8797AF] bg-[#56667A] rounded-xl border p-3 text-white">
-            <h3 class="text-sm font-semibold text-white">Assumptions for this question</h3>
-            <ul class="text-[#F2F1F6] mt-1 list-inside list-disc text-sm leading-5">
-              <li :for={assumption <- scenario["assumptions"]}><%= assumption %></li>
-            </ul>
           </div>
         </div>
       </section>
-    </div>
-    """
-  end
-
-  attr :label, :string, required: true
-  attr :value, :string, required: true
-
-  defp scenario_stat(assigns) do
-    ~H"""
-    <div class="border-[#8797AF] bg-[#56667A] rounded-xl border p-3 text-white">
-      <p class="text-xs font-medium text-white"><%= @label %></p>
-      <p class="mt-1 text-lg font-bold tabular-nums"><%= @value %> BB</p>
     </div>
     """
   end
@@ -238,6 +213,43 @@ defmodule ZoonkWeb.Components.Content.LessonStep do
   defp amount(value) when is_integer(value), do: Integer.to_string(value)
   defp amount(value) when is_float(value), do: value |> :erlang.float_to_binary(decimals: 2) |> String.trim_trailing("0") |> String.trim_trailing(".")
   defp amount(_value), do: "0"
+
+  defp puzzle_difficulty_label("medium"), do: "Medium"
+  defp puzzle_difficulty_label("hard"), do: "Hard"
+  defp puzzle_difficulty_label(id) when id in ["puzzle-preflop-2", "puzzle-flop-2", "puzzle-turn-2", "puzzle-river-2", "puzzle-showdown-2"], do: "Medium"
+  defp puzzle_difficulty_label(_difficulty), do: "Easy"
+
+  defp puzzle_difficulty_class("Medium"), do: "puzzle-scenario-tag--medium"
+  defp puzzle_difficulty_class("Hard"), do: "puzzle-scenario-tag--hard"
+  defp puzzle_difficulty_class(_difficulty), do: "puzzle-scenario-tag--easy"
+
+  defp puzzle_action_summary(%{"action_history" => [first | _]} = scenario) do
+    if List.last(scenario["action_history"]) == "Your turn" do
+      scenario["action_history"]
+    else
+      summarize_legacy_action(first, scenario)
+    end
+  end
+
+  defp puzzle_action_summary(_scenario), do: ["Your turn"]
+
+  defp summarize_legacy_action(history, scenario) do
+    street_bet = get_in(scenario, ["action_state", "street_bet_bb"]) || 0
+
+    cond do
+      String.contains?(history, "small and big blinds") -> ["Blinds posted", "Your turn"]
+      String.contains?(history, "flop checked through") -> ["You call preflop", "Flop checks", "Opponent bets #{amount(street_bet)} BB", "Your turn"]
+      String.contains?(history, "button raised") -> ["Button raises", "You call", "Your turn"]
+      String.contains?(history, "raised to") -> ["Opponent raises to #{amount(street_bet)} BB", "Your turn"]
+      String.contains?(history, "opponent checked") -> ["You raise", "Opponent calls", "Opponent checks", "Your turn"]
+      String.contains?(history, "opponent bet") -> ["You raise", "Opponent calls", "Opponent bets #{amount(street_bet)} BB", "Your turn"]
+      true -> ["Your turn"]
+    end
+  end
+
+  defp puzzle_pot_image_path(pot) when is_number(pot) and pot < 30, do: ~p"/images/poker/pots/small_pot.png"
+  defp puzzle_pot_image_path(pot) when is_number(pot) and pot < 80, do: ~p"/images/poker/pots/medium_pot.png"
+  defp puzzle_pot_image_path(_pot), do: ~p"/images/poker/pots/large_pot.png"
 
   defp rank_label(<<rank::binary-size(1), _suit::binary>>), do: if(rank == "T", do: "10", else: rank)
   defp rank_label(_card), do: "?"

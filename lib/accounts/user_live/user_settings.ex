@@ -6,8 +6,8 @@ defmodule ZoonkWeb.Live.UserSettings do
   alias ZoonkWeb.Components.DeleteItem
 
   @avatar_choices [
-    %{label: "Player", image: "/images/poker/characters/hero.png"},
-    %{label: "Teddy", image: "/images/poker/characters/teddy.png"}
+    %{label: "Hero", image: "/images/poker/characters/hero.png"},
+    %{label: "Heroine", image: "/images/poker/characters/girl_hero.png"}
   ]
 
   @legacy_suit_avatars [

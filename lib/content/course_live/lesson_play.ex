@@ -56,7 +56,7 @@ defmodule ZoonkWeb.Live.LessonPlay do
       |> assign(:selected_option, selected_option)
       |> assign(:saved_selection, pending_selection)
       |> assign(:selection_saved?, saved_selection?)
-      |> assign(:options, shuffle_options(current_step))
+      |> assign(:options, shuffle_options(current_step, puzzle_mode?))
       |> assign(:puzzle_mode?, puzzle_mode?)
       |> assign(:puzzle_candidates, puzzle_candidates)
       |> assign(:lesson_start, DateTime.utc_now())
@@ -173,7 +173,7 @@ defmodule ZoonkWeb.Live.LessonPlay do
           |> assign(:saved_selection, nil)
           |> assign(:selection_saved?, false)
           |> assign(:current_step, next_step)
-          |> assign(:options, shuffle_options(next_step))
+          |> assign(:options, shuffle_options(next_step, socket.assigns.puzzle_mode?))
           |> handle_lesson_completed(next_step)
 
         {:noreply, socket}
@@ -218,7 +218,7 @@ defmodule ZoonkWeb.Live.LessonPlay do
     |> assign(:selected_option, nil)
     |> assign(:saved_selection, nil)
     |> assign(:selection_saved?, false)
-    |> assign(:options, shuffle_options(candidate.step))
+    |> assign(:options, shuffle_options(candidate.step, true))
     |> assign(:step_start, DateTime.utc_now())
   end
 
@@ -317,8 +317,20 @@ defmodule ZoonkWeb.Live.LessonPlay do
   defp user_selected_wrong_option?(%StepOption{correct?: false} = selected, option) when selected.id == option.id, do: true
   defp user_selected_wrong_option?(_selected, _option), do: false
 
-  defp shuffle_options(nil), do: nil
-  defp shuffle_options(%LessonStep{} = step), do: Enum.shuffle(step.options)
+  defp shuffle_options(nil, _puzzle_mode?), do: nil
+
+  defp shuffle_options(%LessonStep{} = step, true) do
+    {correct, incorrect} = Enum.split_with(step.options, & &1.correct?)
+    selected_correct = Enum.take(correct, 4)
+    selected_incorrect = Enum.take(incorrect, max(4 - length(selected_correct), 0))
+
+    case selected_correct do
+      [] -> Enum.take_random(step.options, 4)
+      _ -> Enum.shuffle(selected_correct ++ selected_incorrect)
+    end
+  end
+
+  defp shuffle_options(%LessonStep{} = step, false), do: Enum.shuffle(step.options)
 
   defp confirm_color([], _selected), do: :primary
   defp confirm_color(_opts, %StepOption{correct?: true}), do: :success
