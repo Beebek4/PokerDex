@@ -1,12 +1,12 @@
-<.menu_mobile :if={show_menu?(@active_page) && @active_page != :play} school={@school} app={@app}>
+<.menu_mobile :if={show_menu?(@active_page) && (@active_page != :play || @play_screen == :journey)} school={@school} app={@app}>
   <.app_menu active_page={@active_page} />
 </.menu_mobile>
 
-<.menu_desktop :if={show_menu?(@active_page) && @active_page != :play} school={@school} app={@app}>
+<.menu_desktop :if={show_menu?(@active_page) && (@active_page != :play || @play_screen == :journey)} school={@school} app={@app}>
   <.app_menu active_page={@active_page} />
 </.menu_desktop>
 
-<main :if={show_menu?(@active_page) && @active_page != :play} class="min-h-dvh bg-poker-felt flex flex-col lg:pl-72">
+<main :if={show_menu?(@active_page) && (@active_page != :play || @play_screen == :journey)} class="min-h-dvh bg-poker-felt flex flex-col lg:pl-72">
   <header
     :if={not user_settings?(@active_page)}
     class="border-white/15 bg-[#5F4B66] sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between gap-x-4 border-b px-4 text-white sm:gap-x-6 sm:px-6 lg:px-8"
@@ -18,7 +18,7 @@
       </button>
 
       <.avatar
-        src={@current_user.avatar}
+        src={navbar_avatar(@current_user.avatar)}
         alt={if @current_user.guest?, do: "Guest", else: @current_user.first_name || @current_user.username || "Player"}
         size={:medium}
         class="border border-white/25 bg-[#2C1320]"
@@ -27,15 +27,27 @@
       <span class="max-w-24 border-white/15 bg-[#2C1320]/35 truncate rounded-lg border px-3 py-2 text-sm font-semibold text-white sm:max-w-48">
         <%= if @current_user.guest?, do: "Guest", else: @current_user.first_name || @current_user.username || "Player" %>
       </span>
+
+      <span
+        class="play-streak-badge border-poker-gold/40 bg-[#2C1320]/35 text-poker-gold inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-2 text-sm font-bold sm:px-3"
+        aria-label="1 day streak"
+      >
+        <.icon name="tabler-flame" class="h-4 w-4" aria-hidden="true" />
+        <span class="sm:hidden">1</span>
+        <span class="hidden sm:inline">1 day streak</span>
+      </span>
     </div>
 
-    <span
-      class="border-poker-gold/40 bg-[#2C1320]/35 text-poker-gold inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-3 py-2 text-sm font-bold"
-      aria-label="1 day streak"
-    >
-      <.icon name="tabler-flame" class="h-4 w-4" aria-hidden="true" />
-      <span>1 day streak</span>
-    </span>
+    <div :if={@active_page == :play && @play_screen == :journey} class="play-campaign-stats play-campaign-stats--nav" aria-label="Campaign cash and respect">
+      <span class="play-campaign-stat play-campaign-stat--cash">
+        <span>Cash</span>
+        <strong><%= @campaign_cash %></strong>
+      </span>
+      <span class="play-campaign-stat play-campaign-stat--respect">
+        <span>Respect</span>
+        <strong><%= @respect %></strong>
+      </span>
+    </div>
   </header>
 
   <div
@@ -49,13 +61,6 @@
 
   <nav :if={user_settings?(@active_page)} class="border-white/15 bg-[#5F4B66] shadow-black/10 sticky top-0 z-40 w-full border-b text-white shadow-md">
     <div class="flex min-w-0 items-center gap-3 px-3 sm:px-6 lg:px-8">
-      <.link navigate={~p"/home"} class="flex h-14 shrink-0 items-center gap-2" aria-label="PokerDex home">
-        <img src={school_logo(@school, @app)} alt="" class="h-11 w-11 object-contain" />
-        <span class="shrink-0 text-xl font-extrabold leading-none tracking-tight">
-          <span class="text-[#18151A]">Poker</span><span class="text-[#C62828]">Dex</span>
-        </span>
-      </.link>
-
       <ul role="list" class="flex min-w-0 flex-1 gap-x-4 overflow-x-auto py-3 text-sm font-semibold leading-6 text-white sm:gap-x-6">
         <.dashboard_menu_item :if={@current_user.guest?} active={@active_page == :usersettings_profile} navigate={~p"/users/settings"}>
           <%= gettext("Setup") %>
@@ -91,7 +96,7 @@
   <%= @inner_content %>
 </main>
 
-<main :if={@active_page == :play} class="play-layout w-full overflow-hidden bg-[#2C1320] text-white">
+<main :if={@active_page == :play && @play_screen != :journey} class="play-layout bg-[#2C1320] w-full overflow-hidden text-white">
   <%= @inner_content %>
 </main>
 

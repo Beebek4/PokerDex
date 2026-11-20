@@ -5,13 +5,13 @@ PokerDex is a mobile-friendly Texas Hold’em learning app. It combines short th
 ## Current MVP
 
 - Guest onboarding, with optional account settings.
-- A playable heads-up table prototype using a Rust poker engine. Its placeholder opponent checks or calls; strategic bot styles are still future work.
+- A vertical Play journey map with a Home location for Teddy, Grandpa, Mum, Sister, Brother, and Dad, followed by a separate House Tournament. Teddy is the playable Level 0 warm-up; later opponents and the tournament are locked while their bots are built.
 - A topic-led Theory path from poker foundations and decision-making through preflop, equity, board reading, betting, responses, and later-street planning. Beginner lessons and a first stack-depth lesson are available; other intermediate and advanced topics are shown as planned modules.
 - Puzzles grouped by Preflop, Flop, Turn, River, and Showdown. Each street has two short, authored visual puzzles. Choose a street to start a random hand, with an optional skill-level filter.
 - Saved lesson progress, per-skill practice summaries, and review questions.
 - A responsive interface designed for phone browsers as well as desktop.
 
-Home puts Play first, with lessons and Theory secondary. The Play prototype supports heads-up hands with fold, check, call, raise, card dealing, and showdown against a predictable check/call opponent. It does not yet include strategic bot profiles, rotating the dealer button between hands, all-ins, or side pots. Active hand state is temporary and is not saved across refreshes. The current **Just Play** action opens a randomly selected authored puzzle lesson across the five streets. It does not yet generate a new random puzzle. Strategy rubrics are draft teaching heuristics and need review by a poker-knowledgeable person before public release.
+Home puts Play first, with lessons and Theory secondary. The journey map begins at Home and ends at a separate House Tournament. Teddy is the Level 0 warm-up outside that tournament; his current prototype supports fold, check, call, raise, card dealing, and showdown against a predictable check/call policy. Draft playstyle concepts for Grandpa, Mum, Sister, Brother, and Dad are documented in [HOLDEM_BOT_ROSTER.md](HOLDEM_BOT_ROSTER.md); their gameplay and the tournament remain locked. The game does not yet include strategic bot profiles, rotating the dealer button between hands, all-ins, or side pots. Active hand state is temporary and is not saved across refreshes. The current **Just Play** action opens a randomly selected authored puzzle lesson across the five streets. It does not yet generate a new random puzzle. Strategy rubrics are draft teaching heuristics and need review by a poker-knowledgeable person before public release.
 
 ## Run locally
 

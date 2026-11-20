@@ -6,10 +6,15 @@ defmodule ZoonkWeb.Live.UserSettings do
   alias ZoonkWeb.Components.DeleteItem
 
   @avatar_choices [
-    %{label: "Spades", image: "/images/poker/suits/spade.png"},
-    %{label: "Hearts", image: "/images/poker/suits/heart.png"},
-    %{label: "Diamonds", image: "/images/poker/suits/diamond.png"},
-    %{label: "Clubs", image: "/images/poker/suits/club.png"}
+    %{label: "Player", image: "/images/poker/characters/hero.png"},
+    %{label: "Teddy", image: "/images/poker/characters/teddy.png"}
+  ]
+
+  @legacy_suit_avatars [
+    "/images/poker/suits/spade.png",
+    "/images/poker/suits/heart.png",
+    "/images/poker/suits/diamond.png",
+    "/images/poker/suits/club.png"
   ]
 
   # When users change their email address, we send them a link to confirm their new email.
@@ -215,4 +220,9 @@ defmodule ZoonkWeb.Live.UserSettings do
   defp get_page_title(:avatar), do: gettext("Avatar")
   defp get_page_title(:delete), do: gettext("Delete")
   defp get_page_title(_live_action), do: gettext("Settings")
+
+  defp avatar_selected?(avatar, image) do
+    avatar == image or
+      (image == "/images/poker/characters/hero.png" and (is_nil(avatar) or avatar in @legacy_suit_avatars))
+  end
 end

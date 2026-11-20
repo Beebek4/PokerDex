@@ -1,253 +1,344 @@
-<section class="play-shell" aria-label="Poker game">
-  <header class="play-topbar">
-    <h1 class="sr-only">Heads-up table</h1>
-    <.link navigate={~p"/home"} class="play-exit" aria-label="Leave table and return home">
-      <.icon name="tabler-chevron-left" class="h-5 w-5" />
-      <span class="hidden sm:inline">Leave table</span>
-    </.link>
-
-    <div class="flex min-w-0 items-center gap-2">
-      <span class="font-semibold tracking-tight">Call/check bot</span>
-      <span class="text-white/50">·</span>
-      <span class="text-white/75 truncate text-sm"><%= @game_view.round %></span>
-    </div>
-
-    <span class="play-chips-label"><span aria-hidden="true">◉</span> Play chips</span>
-  </header>
-
-  <div class="play-table-area">
-    <div class="play-backdrop" aria-hidden="true">
-      <img src={~p"/images/poker/backgrounds/livingroom_background.png"} alt="" class="h-full w-full object-cover" />
-    </div>
-
-    <div class="play-table-stage">
-      <aside class="play-player-panel" aria-label="Your player status">
-        <div class="play-avatar" aria-hidden="true">Y</div>
-        <span class="play-player-name">You</span>
-        <div class="play-health-shell">
-          <progress
-            class="play-health-track"
-            aria-label="Your remaining chips"
-            aria-valuemin="0"
-            aria-valuemax="200"
-            aria-valuenow={round(@hero_health_chips)}
-            aria-valuetext={"#{chip_text(@hero_health_chips)} chips"}
-            max="100"
-            value={PokerHealth.green_width(@hero_health_chips)}
-          >
-          </progress>
-          <progress
-            :if={PokerHealth.gold_width(@hero_health_chips) > 0}
-            class="play-health-overflow"
-            max="100"
-            value={PokerHealth.gold_width(@hero_health_chips)}
-            aria-hidden="true"
-          >
-          </progress>
-        </div>
-        <span class="play-player-stack"><span class="play-stack-chip" aria-hidden="true"></span><%= chip_text(@game_view.hero_stack) %></span>
-      </aside>
-
-      <div class="play-table" role="region" aria-label="Heads-up poker table">
-        <img src={~p"/images/poker/tables/poker_table1.png"} alt="" class="pointer-events-none absolute inset-0 h-full w-full select-none object-cover" />
-
-        <div class="left-[82%] top-[42%] w-[18%] absolute z-10 flex items-center justify-center">
-          <div :if={@game_view.bot_cards == []} class="opponent-card-back max-w-[6.5rem] w-full" role="img" aria-label="Bot hole cards face down">
-            <img src={~p"/images/poker/opp_cards.png"} alt="" class="h-full w-full object-contain" />
-          </div>
-          <div :if={@game_view.bot_cards != []} class="gap-[2%] grid w-full grid-cols-2" role="group" aria-label="Bot hole cards revealed">
-            <.playing_card :for={card <- @game_view.bot_cards} id={"hand-#{@hand_id}-bot-card-#{card}"} card={card} highlight={card in @game_view.best_five} />
-          </div>
-        </div>
-
-        <div
-          class="left-[20%] top-[34%] w-[60%] gap-[2%] absolute z-10 grid grid-cols-5"
-          role="group"
-          aria-label={if @game_view.board == [], do: "Community cards not dealt yet", else: "Community cards: #{Enum.map_join(@game_view.board, ", ", &card_label/1)}"}
-        >
-          <.playing_card
-            :for={{card, index} <- Enum.with_index(@game_view.board)}
-            id={"hand-#{@hand_id}-board-card-#{index}-#{card}"}
-            delay={if(index < 3, do: index * 65, else: 0)}
-            card={card}
-            highlight={card in @game_view.best_five}
-          />
-        </div>
-
-        <.pot_display id={"hand-#{@hand_id}-pot-#{@game_view.pot}"} amount={chip_text(@game_view.pot)} pot={@game_view.pot} />
-
-        <div
-          class="top-[42%] w-[18%] gap-[2%] absolute left-0 z-10 grid grid-cols-2"
-          role="group"
-          aria-label={"Your hand: #{Enum.map_join(@game_view.hero_cards, ", ", &card_label/1)}"}
-        >
-          <.playing_card
-            :for={card <- @game_view.hero_cards}
-            id={"hand-#{@hand_id}-hero-card-#{card}"}
-            card={card}
-            folded={@hero_folded}
-            highlight={card in @game_view.best_five}
-          />
-        </div>
-
-        <span
-          class="left-[21%] top-[59%] aspect-square w-[5%] text-[8px] absolute z-20 flex items-center justify-center rounded-full border border-amber-900 bg-amber-300 font-black text-amber-950 shadow-md sm:text-xs"
-          role="img"
-          aria-label="Dealer button · You"
-        >
-          D
-        </span>
+<%= if @play_screen == :journey do %>
+  <section class="play-journey-screen" aria-labelledby="play-journey-title">
+    <div class="play-journey-content">
+      <div class="play-journey-heading">
+        <p class="play-journey-eyebrow">THE POKERDEX CIRCUIT</p>
+        <h1 id="play-journey-title">Choose your next challenge</h1>
+        <p>Beat each opponent to win their buy-in. Respect unlocks the next match.</p>
+        <p class="play-campaign-note">Play chips only · no real-money value</p>
       </div>
 
-      <aside class="play-player-panel" aria-label="Opponent status">
-        <div class="play-avatar" aria-hidden="true">B</div>
-        <span class="play-player-name">Bot</span>
-        <div class="play-health-shell play-health-shell--opponent">
-          <progress
-            class="play-health-track"
-            aria-label="Opponent remaining chips"
-            aria-valuemin="0"
-            aria-valuemax="200"
-            aria-valuenow={round(@bot_health_chips)}
-            aria-valuetext={"#{chip_text(@bot_health_chips)} chips"}
-            max="100"
-            value={PokerHealth.green_width(@bot_health_chips)}
-          >
-          </progress>
-          <progress
-            :if={PokerHealth.gold_width(@bot_health_chips) > 0}
-            class="play-health-overflow play-health-overflow--opponent"
-            max="100"
-            value={PokerHealth.gold_width(@bot_health_chips)}
-            aria-hidden="true"
-          >
-          </progress>
-        </div>
-        <span class="play-player-stack"><span class="play-stack-chip" aria-hidden="true"></span><%= chip_text(@game_view.bot_stack) %></span>
-      </aside>
-    </div>
-  </div>
+      <section
+        :for={location <- @journey_locations}
+        class={["play-location", location.id == "home" && "play-location--home"]}
+        aria-labelledby={"location-#{location.id}"}
+      >
+        <header class="play-location-heading">
+          <span class="play-location-icon" aria-hidden="true">
+            <.icon :if={location.id == "home"} name="tabler-home" class="h-5 w-5" />
+            <.icon :if={location.id == "house-tournament"} name="tabler-trophy" class="h-5 w-5" />
+          </span>
+          <div>
+            <p><%= location.eyebrow %></p>
+            <h2 id={"location-#{location.id}"}><%= location.name %></h2>
+            <span><%= location.detail %></span>
+          </div>
+        </header>
 
-  <div class="play-bottom">
-    <div class="play-hud" aria-label="Hand information">
-      <div class="play-street-history" role="group" aria-label="Action history by street">
-        <section
-          :for={{street, short_name} <- @streets}
-          class={["play-street-card", @history_street == street && "is-active"]}
-          aria-label={"#{street} actions"}
-          aria-current={if @history_street == street, do: "step", else: nil}
-        >
-          <h2 class="play-street-heading"><%= short_name %></h2>
-          <ul class="play-street-actions">
-            <li :for={action <- actions_for_street(@action_history, street)} class="play-street-action" title={if action, do: "#{action.actor}: #{action.text}", else: nil}>
-              <span :if={action} class={if action.actor == "You", do: "play-history-hero", else: "play-history-bot"} aria-hidden="true">
-                <%= if action.actor == "You", do: "YOU", else: "BOT" %>
+        <div :if={location.id == "home"} class="play-route" role="list" aria-label="Home opponents">
+          <svg class="play-route-road" viewBox="0 0 100 720" preserveAspectRatio="none" aria-hidden="true">
+            <path class="play-route-road-edge" d="M25 61 C25 120 75 120 75 180 S25 240 25 299 S75 360 75 418 S25 480 25 537 S75 600 75 659" />
+            <path class="play-route-road-center" d="M25 61 C25 120 75 120 75 180 S25 240 25 299 S75 360 75 418 S25 480 25 537 S75 600 75 659" />
+          </svg>
+          <div :for={opponent <- location.opponents} class={["play-route-stop", opponent.side == :left && "is-left"]} role="listitem">
+            <div class={["play-route-pin", opponent.status == :open && "is-open"]} aria-hidden="true">
+              <.icon :if={opponent.status == :locked} name="tabler-lock" class="h-5 w-5" />
+            </div>
+            <img :if={opponent.id == "teddy"} src={~p"/images/poker/characters/teddy.png"} alt="" class="play-route-teddy" />
+
+            <button :if={opponent.status == :open} type="button" phx-click="start-match" class="play-route-card is-open">
+              <span class="play-route-label"><%= opponent.level %></span>
+              <strong><%= opponent.name %></strong>
+              <span class="play-route-economy">
+                <%= if opponent.buy_in == 0 do %>
+                  Free warm-up · Win <%= opponent.respect_reward %> Respect
+                <% else %>
+                  Buy-in <%= chip_text(opponent.buy_in) %> · <%= opponent.blinds %> blinds
+                <% end %>
               </span>
-              <span :if={action} class="play-street-action-text"><%= action.text %></span>
-              <span :if={is_nil(action)} class="play-street-empty" aria-hidden="true">—</span>
-            </li>
-          </ul>
-        </section>
+              <span :if={opponent.buy_in > 0} class="play-route-requirement">Needs <%= opponent.respect_required %> Respect</span>
+              <span class="play-route-opponent"><%= opponent.personality %> · <%= opponent.style %></span>
+              <span class="play-route-preview"><%= opponent.preview %></span>
+              <span class="play-route-cta">Play <%= opponent.name %> <.icon name="tabler-arrow-right" class="h-4 w-4" /></span>
+            </button>
+
+            <article :if={opponent.status == :locked} class="play-route-card is-locked">
+              <span class="play-route-label"><%= opponent.level %></span>
+              <strong><%= opponent.name %></strong>
+              <span class="play-route-economy">Buy-in <%= chip_text(opponent.buy_in) %> · <%= opponent.blinds %> blinds</span>
+              <span class="play-route-requirement">Needs <%= opponent.respect_required %> Respect</span>
+              <span class="play-route-opponent"><%= opponent.personality %> · <%= opponent.style %></span>
+              <span class="play-route-preview"><%= opponent.preview %></span>
+            </article>
+          </div>
+        </div>
+
+        <article :if={location.id == "house-tournament"} class="play-tournament-stop" aria-label="House Tournament, locked until the home matches are complete">
+          <span class="play-tournament-pin" aria-hidden="true"><.icon name="tabler-lock" class="h-6 w-6" /></span>
+          <div>
+            <span class="play-route-label">LOCKED · AFTER DAD</span>
+            <strong>Final event</strong>
+            <span class="play-route-economy">Entry <%= chip_text(location.buy_in) %> chips</span>
+            <span class="play-route-requirement">Needs <%= location.respect_required %> Respect</span>
+            <span class="play-route-opponent"><%= location.personality %> · <%= location.style %></span>
+            <span class="play-route-preview"><%= location.preview %></span>
+          </div>
+        </article>
+      </section>
+
+      <p class="play-route-footnote">Win a cash match to collect the opponent’s buy-in. The tournament needs 2,500 chips and 6 Respect.</p>
+    </div>
+  </section>
+<% else %>
+  <section class="play-shell" aria-label="Poker game">
+    <header class="play-topbar">
+      <h1 class="sr-only">Heads-up table</h1>
+      <button type="button" phx-click="back-to-journey" class="play-exit" aria-label="Return to bot journey">
+        <.icon name="tabler-chevron-left" class="h-5 w-5" />
+        <span class="hidden sm:inline">Bot journey</span>
+      </button>
+
+      <div class="flex min-w-0 items-center gap-2">
+        <span class="font-semibold tracking-tight">Teddy</span>
+        <span class="text-white/50">·</span>
+        <span class="text-white/75 truncate text-sm"><%= @game_view.round %></span>
       </div>
-      <div class="play-to-call" aria-label={"To call #{chip_text(@game_view.to_call)} chips"}>
-        <span>TO CALL</span>
-        <strong><%= chip_text(@game_view.to_call) %></strong>
+
+      <span class="play-chips-label"><span aria-hidden="true">◉</span> Play chips</span>
+    </header>
+
+    <div class="play-table-area">
+      <div class="play-backdrop" aria-hidden="true">
+        <img src={~p"/images/poker/backgrounds/livingroom_background.png"} alt="" class="h-full w-full object-cover" />
+      </div>
+
+      <div class="play-table-stage">
+        <aside class="play-player-panel" aria-label="Your player status">
+          <div class="play-avatar play-avatar--character play-avatar--hero" aria-hidden="true">
+            <img src={~p"/images/poker/characters/hero.png"} alt="" />
+          </div>
+          <span class="play-player-name">You</span>
+          <div class="play-health-shell">
+            <progress
+              class="play-health-track"
+              aria-label="Your remaining chips"
+              aria-valuemin="0"
+              aria-valuemax="200"
+              aria-valuenow={round(@hero_health_chips)}
+              aria-valuetext={"#{chip_text(@hero_health_chips)} chips"}
+              max="100"
+              value={PokerHealth.green_width(@hero_health_chips)}
+            >
+            </progress>
+            <progress
+              :if={PokerHealth.gold_width(@hero_health_chips) > 0}
+              class="play-health-overflow"
+              max="100"
+              value={PokerHealth.gold_width(@hero_health_chips)}
+              aria-hidden="true"
+            >
+            </progress>
+          </div>
+          <span class="play-player-stack"><span class="play-stack-chip" aria-hidden="true"></span><%= chip_text(@game_view.hero_stack) %></span>
+        </aside>
+
+        <div class="play-table" role="region" aria-label="Heads-up poker table">
+          <img src={~p"/images/poker/tables/poker_table1.png"} alt="" class="pointer-events-none absolute inset-0 h-full w-full select-none object-cover" />
+
+          <div class="left-[82%] top-[42%] w-[18%] absolute z-10 flex items-center justify-center">
+            <div :if={@game_view.bot_cards == []} class="opponent-card-back max-w-[6.5rem] w-full" role="img" aria-label="Teddy's hole cards face down">
+              <img src={~p"/images/poker/opp_cards.png"} alt="" class="h-full w-full object-contain" />
+            </div>
+            <div :if={@game_view.bot_cards != []} class="gap-[2%] grid w-full grid-cols-2" role="group" aria-label="Teddy's hole cards revealed">
+              <.playing_card :for={card <- @game_view.bot_cards} id={"hand-#{@hand_id}-bot-card-#{card}"} card={card} highlight={card in @game_view.best_five} />
+            </div>
+          </div>
+
+          <div
+            class="left-[20%] top-[34%] w-[60%] gap-[2%] absolute z-10 grid grid-cols-5"
+            role="group"
+            aria-label={if @game_view.board == [], do: "Community cards not dealt yet", else: "Community cards: #{Enum.map_join(@game_view.board, ", ", &card_label/1)}"}
+          >
+            <.playing_card
+              :for={{card, index} <- Enum.with_index(@game_view.board)}
+              id={"hand-#{@hand_id}-board-card-#{index}-#{card}"}
+              delay={if(index < 3, do: index * 65, else: 0)}
+              card={card}
+              highlight={card in @game_view.best_five}
+            />
+          </div>
+
+          <.pot_display id={"hand-#{@hand_id}-pot-#{@game_view.pot}"} amount={chip_text(@game_view.pot)} pot={@game_view.pot} />
+
+          <div
+            class="top-[42%] w-[18%] gap-[2%] absolute left-0 z-10 grid grid-cols-2"
+            role="group"
+            aria-label={"Your hand: #{Enum.map_join(@game_view.hero_cards, ", ", &card_label/1)}"}
+          >
+            <.playing_card
+              :for={card <- @game_view.hero_cards}
+              id={"hand-#{@hand_id}-hero-card-#{card}"}
+              card={card}
+              folded={@hero_folded}
+              highlight={card in @game_view.best_five}
+            />
+          </div>
+
+          <span
+            class="left-[21%] top-[59%] aspect-square w-[5%] text-[8px] absolute z-20 flex items-center justify-center rounded-full border border-amber-900 bg-amber-300 font-black text-amber-950 shadow-md sm:text-xs"
+            role="img"
+            aria-label="Dealer button · You"
+          >
+            D
+          </span>
+        </div>
+
+        <aside class="play-player-panel" aria-label="Teddy's player status">
+          <div class="play-avatar play-avatar--character" aria-hidden="true">
+            <img src={~p"/images/poker/characters/teddy.png"} alt="" />
+          </div>
+          <span class="play-player-name">Teddy</span>
+          <div class="play-health-shell play-health-shell--opponent">
+            <progress
+              class="play-health-track"
+              aria-label="Opponent remaining chips"
+              aria-valuemin="0"
+              aria-valuemax="200"
+              aria-valuenow={round(@bot_health_chips)}
+              aria-valuetext={"#{chip_text(@bot_health_chips)} chips"}
+              max="100"
+              value={PokerHealth.green_width(@bot_health_chips)}
+            >
+            </progress>
+            <progress
+              :if={PokerHealth.gold_width(@bot_health_chips) > 0}
+              class="play-health-overflow play-health-overflow--opponent"
+              max="100"
+              value={PokerHealth.gold_width(@bot_health_chips)}
+              aria-hidden="true"
+            >
+            </progress>
+          </div>
+          <span class="play-player-stack"><span class="play-stack-chip" aria-hidden="true"></span><%= chip_text(@game_view.bot_stack) %></span>
+        </aside>
       </div>
     </div>
 
-    <div class="play-status" role="status" aria-live="polite">
-      <p :if={@game_message} class={[@game_view.round == "Complete" && "play-result-message", "text-[#E2DCE5]"]}><%= @game_message %></p>
-      <p :if={@game_error} class="text-rose-200"><%= @game_error %></p>
-    </div>
+    <div class="play-bottom">
+      <div class="play-hud" aria-label="Hand information">
+        <div class="play-street-history" role="group" aria-label="Action history by street">
+          <section
+            :for={{street, short_name} <- @streets}
+            class={["play-street-card", @history_street == street && "is-active"]}
+            aria-label={"#{street} actions"}
+            aria-current={if @history_street == street, do: "step", else: nil}
+          >
+            <h2 class="play-street-heading"><%= short_name %></h2>
+            <ul class="play-street-actions">
+              <li :for={action <- actions_for_street(@action_history, street)} class="play-street-action" title={if action, do: "#{action.actor}: #{action.text}", else: nil}>
+                <span :if={action} class={if action.actor == "You", do: "play-history-hero", else: "play-history-bot"} aria-hidden="true">
+                  <%= if action.actor == "You", do: "YOU", else: "BOT" %>
+                </span>
+                <span :if={action} class="play-street-action-text"><%= action.text %></span>
+                <span :if={is_nil(action)} class="play-street-empty" aria-hidden="true">—</span>
+              </li>
+            </ul>
+          </section>
+        </div>
+        <div class="play-to-call" aria-label={"To call #{chip_text(@game_view.to_call)} chips"}>
+          <span>TO CALL</span>
+          <strong><%= chip_text(@game_view.to_call) %></strong>
+        </div>
+      </div>
 
-    <div class="play-actions">
-      <button
-        :if={@game_view.human_action_enabled}
-        type="button"
-        phx-click="player-action"
-        phx-value-action="fold"
-        class="border-white/15 bg-[#2C1320] min-h-11 rounded-xl border px-3 text-sm font-bold text-white transition hover:bg-[#4A263C] focus-visible:outline-poker-gold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-[0.98]"
-      >
-        Fold
-      </button>
+      <div class="play-status" role="status" aria-live="polite">
+        <p :if={@game_message} class={[@game_view.round == "Complete" && "play-result-message", "text-[#E2DCE5]"]}><%= @game_message %></p>
+        <p :if={@game_error} class="text-rose-200"><%= @game_error %></p>
+      </div>
 
-      <button
-        :if={@game_view.human_action_enabled && @game_view.to_call > 0}
-        type="button"
-        phx-click="player-action"
-        phx-value-action="call"
-        class="bg-poker-gold text-[#2C1320] min-h-11 shadow-black/20 rounded-xl px-3 text-sm font-extrabold shadow-md transition hover:bg-poker-gold-light focus-visible:outline-poker-gold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-[0.98]"
-      >
-        Call <%= chip_text(@game_view.to_call) %>
-      </button>
+      <div class="play-actions">
+        <button
+          :if={@game_view.human_action_enabled}
+          id="fold-action"
+          type="button"
+          phx-click="player-action"
+          phx-value-action="fold"
+          class="border-white/15 bg-[#2C1320] min-h-11 rounded-xl border px-3 text-sm font-bold text-white transition hover:bg-[#4A263C] focus-visible:outline-poker-gold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-[0.98]"
+        >
+          Fold
+        </button>
 
-      <button
-        :if={@game_view.human_action_enabled && @game_view.to_call == 0}
-        type="button"
-        phx-click="player-action"
-        phx-value-action="check"
-        class="bg-poker-gold text-[#2C1320] min-h-11 shadow-black/20 rounded-xl px-3 text-sm font-extrabold shadow-md transition hover:bg-poker-gold-light focus-visible:outline-poker-gold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-[0.98]"
-      >
-        Check
-      </button>
+        <button
+          :if={@game_view.human_action_enabled}
+          id="primary-player-action"
+          type={if @raise_adjusted, do: "submit", else: "button"}
+          form={if @raise_adjusted, do: "raise-form", else: nil}
+          phx-click={if @raise_adjusted, do: nil, else: "player-action"}
+          phx-value-action={if @game_view.to_call > 0, do: "call", else: "check"}
+          class="bg-poker-gold text-[#2C1320] min-h-11 shadow-black/20 rounded-xl px-3 text-sm font-extrabold shadow-md transition hover:bg-poker-gold-light focus-visible:outline-poker-gold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-[0.98]"
+        >
+          <%= cond do %>
+            <% @raise_adjusted && @game_view.to_call == 0 -> %>
+              Bet <%= @raise_to %>
+            <% @raise_adjusted -> %>
+              Raise to <%= @raise_to %>
+            <% @game_view.to_call > 0 -> %>
+              Call <%= chip_text(@game_view.to_call) %>
+            <% true -> %>
+              Check
+          <% end %>
+        </button>
 
-      <form
-        :if={@game_view.human_action_enabled && @game_view.min_raise <= @game_view.max_raise}
-        phx-change="set-raise-size"
-        phx-submit="raise"
-        class="border-white/10 bg-[#2C1320]/75 grid-cols-[1fr_auto] col-span-2 grid items-center gap-x-2 gap-y-0 rounded-xl border px-2 py-1 sm:col-span-1 sm:gap-x-3 sm:px-3 sm:py-1.5"
-      >
-        <div class="col-span-2 flex min-w-0 items-center justify-between gap-2">
-          <div class="flex shrink-0 items-center gap-1.5">
+        <form
+          :if={@game_view.human_action_enabled && @game_view.min_raise <= @game_view.max_raise}
+          id="raise-form"
+          phx-change="set-raise-size"
+          phx-submit="raise"
+          class="border-white/10 bg-[#2C1320]/75 grid-cols-[1fr_auto] col-span-2 grid items-center gap-x-2 gap-y-0 rounded-xl border px-2 py-1 sm:col-span-1 sm:gap-x-3 sm:px-3 sm:py-1.5"
+        >
+          <div class="col-span-2 grid min-w-0 grid-cols-2 items-center gap-2">
+            <button
+              :if={@raise_adjusted}
+              type="button"
+              phx-click="player-action"
+              phx-value-action={if @game_view.to_call > 0, do: "call", else: "check"}
+              aria-label={if @game_view.to_call > 0, do: "Call instead of raising", else: "Check instead of betting"}
+              class="border-[#A7ADC6]/30 bg-[#5F4B66] min-h-11 text-[#F2F1F6] w-full whitespace-nowrap rounded-lg border px-2 text-xs font-bold transition hover:bg-[#735C79] focus-visible:outline-poker-gold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-[0.98]"
+            >
+              <%= if @game_view.to_call > 0, do: "Call instead", else: "Check instead" %>
+            </button>
             <button
               type="button"
               phx-click="raise-ten-percent"
               title="Add 10% of your remaining stack to the selected amount"
-              class="border-white/15 bg-[#56667A] min-h-11 min-w-14 whitespace-nowrap rounded-lg border px-2 text-xs font-extrabold text-white transition hover:bg-[#65758A] focus-visible:outline-poker-gold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-[0.98]"
+              class="border-[#A7ADC6]/30 bg-[#5F4B66] min-h-11 min-w-14 text-[#F2F1F6] col-start-2 w-full whitespace-nowrap rounded-lg border px-2 text-xs font-extrabold transition hover:bg-[#735C79] focus-visible:outline-poker-gold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-[0.98]"
               aria-label="Increase selected bet by 10 percent of your remaining stack"
             >
               +10%
             </button>
-            <button
-              type="submit"
-              class="bg-poker-gold text-[#2C1320] min-h-11 whitespace-nowrap rounded-lg px-3 text-xs font-extrabold shadow-sm transition hover:bg-poker-gold-light focus-visible:outline-poker-gold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-[0.98] sm:text-sm"
-            >
-              <%= if @game_view.to_call == 0, do: "Bet #{@raise_to}", else: "Raise to #{@raise_to}" %>
-            </button>
           </div>
-          <label for="raise-to" class="text-[#E2DCE5] text-[11px] min-w-0 text-right font-semibold sm:text-xs">
-            <%= if @game_view.to_call == 0, do: "Bet amount", else: "Raise to" %>
-            <output class="text-poker-gold ml-1 tabular-nums" aria-live="polite"><%= @raise_to %></output>
-          </label>
-        </div>
-        <input
-          id="raise-to"
-          name="amount"
-          type="range"
-          min={@game_view.min_raise}
-          max={@game_view.max_raise}
-          step="1"
-          value={@raise_to}
-          class="poker-raise-slider accent-poker-gold col-span-2 w-full cursor-pointer"
-          aria-describedby="raise-limits"
-        />
-        <p id="raise-limits" class="text-[#A7ADC6] text-[9px] col-span-2 flex justify-between sm:text-[10px]">
-          <span><%= chip_text(@game_view.min_raise) %></span>
-          <span>Chips</span>
-          <span><%= chip_text(@game_view.max_raise) %></span>
-        </p>
-      </form>
+          <input
+            id="raise-to"
+            name="amount"
+            type="range"
+            min={@game_view.min_raise}
+            max={@game_view.max_raise}
+            step="1"
+            value={@raise_to}
+            class="poker-raise-slider accent-poker-gold col-span-2 w-full cursor-pointer"
+            aria-label={if @game_view.to_call == 0, do: "Bet amount", else: "Raise amount"}
+            aria-describedby="raise-limits"
+          />
+          <p id="raise-limits" class="text-[#A7ADC6] text-[9px] col-span-2 flex justify-between sm:text-[10px]">
+            <span><%= chip_text(@game_view.min_raise) %></span>
+            <span>Chips</span>
+            <span><%= chip_text(@game_view.max_raise) %></span>
+          </p>
+        </form>
 
-      <span :if={@game_view.round == "Complete"} class="text-white/80 text-sm font-semibold"><%= if(@match_over, do: "Match complete", else: "Hand complete") %></span>
-      <button
-        :if={@game_view.round == "Complete" && !@match_over}
-        type="button"
-        phx-click="new-hand"
-        class="bg-poker-gold text-[#2C1320] min-h-11 shadow-black/20 rounded-xl px-5 text-sm font-extrabold shadow-md transition hover:bg-poker-gold-light focus-visible:outline-poker-gold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-[0.98]"
-      >
-        Deal next hand <.icon name="tabler-arrow-right" class="ml-1 inline h-4 w-4" />
-      </button>
-      <div :if={@game_view.round == "Complete"} class="play-action-reserve" aria-hidden="true"></div>
+        <span :if={@game_view.round == "Complete"} class="text-white/80 text-sm font-semibold"><%= if(@match_over, do: "Match complete", else: "Hand complete") %></span>
+        <button
+          :if={@game_view.round == "Complete" && !@match_over}
+          id="deal-next-hand"
+          type="button"
+          phx-click="new-hand"
+          phx-disable-with="Dealing…"
+          class="bg-poker-gold text-[#2C1320] min-h-11 shadow-black/20 rounded-xl px-5 text-sm font-extrabold shadow-md transition hover:bg-poker-gold-light focus-visible:outline-poker-gold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-[0.98]"
+        >
+          Deal next hand <.icon name="tabler-arrow-right" class="ml-1 inline h-4 w-4" />
+        </button>
+        <div :if={@game_view.round == "Complete"} class="play-action-reserve" aria-hidden="true"></div>
+      </div>
     </div>
-  </div>
-</section>
+  </section>
+<% end %>

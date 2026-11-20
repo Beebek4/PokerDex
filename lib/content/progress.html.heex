@@ -15,22 +15,70 @@
     <div class="grid items-start gap-4 sm:grid-cols-2">
       <section
         id="play-progress"
-        class="border-[#8797AF]/60 from-[#5F4B66] to-[#2C1320] shadow-black/20 rounded-2xl border bg-gradient-to-br p-5 shadow-xl sm:col-span-2 sm:flex sm:items-center sm:justify-between sm:gap-6 sm:p-6"
+        class="border-[#8797AF]/60 from-[#5F4B66] to-[#2C1320] shadow-black/20 rounded-2xl border bg-gradient-to-br p-5 shadow-xl sm:col-span-2 sm:p-6"
       >
-        <div class="flex items-start gap-4">
-          <span aria-hidden="true" class="border-white/40 bg-[#2C1320]/30 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-2xl text-white">♦</span>
-          <div>
-            <p class="tracking-[0.16em] text-[#A7ADC6] text-xs font-bold uppercase">PokerDex</p>
-            <h2 class="mt-1 text-xl font-bold text-white">Play</h2>
-            <p class="text-[#E2DCE5] mt-1 max-w-xl text-sm leading-6">Bot play is being introduced. Your table stats will appear here when full bot games are available.</p>
+        <div class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+          <div class="flex items-start gap-4">
+            <span aria-hidden="true" class="border-white/40 bg-[#2C1320]/30 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-2xl text-white">
+              ♦
+            </span>
+            <div>
+              <p class="tracking-[0.16em] text-[#A7ADC6] text-xs font-bold uppercase">PokerDex</p>
+              <h2 class="mt-1 text-xl font-bold text-white">Play</h2>
+              <p class="text-[#E2DCE5] mt-1 max-w-xl text-sm leading-6">Your Home route records and tournament reward.</p>
+            </div>
+          </div>
+          <.link
+            navigate={~p"/play"}
+            class="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 self-start rounded-xl bg-poker-gold px-4 py-2 text-sm font-bold text-[#2C1320] transition hover:bg-poker-gold-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-poker-gold"
+          >
+            Open Play <.icon name="tabler-arrow-right" class="h-4 w-4" />
+          </.link>
+        </div>
+
+        <div class="border-white/15 bg-[#2C1320]/65 mt-5 overflow-hidden rounded-xl border">
+          <div class="grid-cols-[minmax(0,1fr)_6rem_7rem] border-white/10 text-[#A7ADC6] hidden gap-3 border-b px-4 py-2 text-xs font-semibold uppercase tracking-wide sm:grid">
+            <span>Opponent</span><span class="text-right">Win rate</span><span class="text-right">Times faced</span>
+          </div>
+          <div
+            :for={opponent <- @play_progress.opponents}
+            class="grid-cols-[minmax(0,1fr)_auto] border-white/10 grid items-center gap-3 border-b px-4 py-3 last:border-0 sm:grid-cols-[minmax(0,1fr)_6rem_7rem]"
+          >
+            <span class="font-semibold text-white"><%= opponent.name %></span>
+            <span class="text-[#A7ADC6] text-right text-xs sm:hidden">
+              Win <strong class="text-white"><%= opponent.win_percentage %>%</strong> · Faced <strong class="text-white"><%= opponent.faced %></strong>
+            </span>
+            <span class="text-[#E2DCE5] hidden text-right text-sm font-bold sm:block"><%= opponent.win_percentage %>%</span>
+            <span class="text-[#A7ADC6] hidden text-right text-sm sm:block"><%= opponent.faced %></span>
+          </div>
+          <div class="grid-cols-[minmax(0,1fr)_auto] border-poker-gold/30 bg-poker-gold/10 grid items-center gap-3 border-t px-4 py-3 sm:grid-cols-[minmax(0,1fr)_6rem_7rem]">
+            <span class="flex items-center gap-2 font-semibold text-white"><.icon name="tabler-trophy" class="h-4 w-4 text-poker-gold" />House Tournament</span>
+            <span class="text-[#A7ADC6] text-right text-xs sm:hidden">
+              Win <strong class="text-white"><%= @play_progress.tournament.win_percentage %>%</strong>
+              · Faced <strong class="text-white"><%= @play_progress.tournament.faced %></strong>
+            </span>
+            <span class="text-[#E2DCE5] hidden text-right text-sm font-bold sm:block"><%= @play_progress.tournament.win_percentage %>%</span>
+            <span class="text-[#A7ADC6] hidden text-right text-sm sm:block"><%= @play_progress.tournament.faced %></span>
           </div>
         </div>
-        <.link
-          navigate={~p"/play"}
-          class="mt-4 inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-poker-gold px-4 py-2 text-sm font-bold text-[#2C1320] transition hover:bg-poker-gold-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-poker-gold sm:mt-0"
-        >
-          Open Play <.icon name="tabler-arrow-right" class="h-4 w-4" />
-        </.link>
+
+        <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <p class="text-[#C8C3D0] text-xs leading-5">Win rate and match counts will fill in when campaign results are saved.</p>
+          <div
+            class="min-h-14 border-poker-gold/30 bg-[#2C1320]/70 flex items-center gap-3 rounded-xl border px-4 py-2"
+            aria-label={if @play_progress.tournament.bracelet_earned, do: "House bracelet earned", else: "House bracelet not yet earned"}
+          >
+            <span aria-hidden="true" class="bg-poker-gold/15 text-poker-gold flex h-9 w-9 items-center justify-center rounded-full">
+              <.icon name="tabler-award" class="h-5 w-5" />
+            </span>
+            <span>
+              <span class="text-[#A7ADC6] block text-xs font-bold uppercase tracking-wide">House Bracelet</span>
+              <span class="block text-sm font-semibold text-white">
+                <%= if @play_progress.tournament.bracelet_earned, do: "Champion", else: "Win the tournament to earn it" %>
+              </span>
+            </span>
+          </div>
+        </div>
       </section>
 
       <section id="puzzles-progress" class="border-[#8797AF]/70 bg-[#56667A] shadow-black/20 rounded-2xl border p-5 shadow-xl">

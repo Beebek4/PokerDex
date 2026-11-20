@@ -5,20 +5,126 @@ defmodule ZoonkWeb.Live.Play do
   alias Zoonk.Content.PokerHealth
   alias Zoonk.Poker.Native
 
+  @journey_locations [
+    %{
+      id: "home",
+      name: "Home",
+      eyebrow: "STARTING LOCATION",
+      detail: "Meet the family, one table at a time.",
+      opponents: [
+        %{
+          id: "teddy",
+          level: "LEVEL 0 · WARM-UP",
+          name: "Teddy",
+          personality: "Gentle",
+          style: "Check/call",
+          preview: "Not in the tournament.",
+          buy_in: 0,
+          respect_required: 0,
+          respect_reward: 1,
+          status: :open,
+          side: :right
+        },
+        %{
+          id: "grandpa",
+          level: "LEVEL 1",
+          name: "Grandpa",
+          personality: "Patient",
+          style: "Tight-passive",
+          preview: "Few hands, few bluffs; big bets tend strong.",
+          buy_in: 100,
+          blinds: "1/2",
+          respect_required: 1,
+          status: :locked,
+          side: :left
+        },
+        %{
+          id: "mum",
+          level: "LEVEL 2",
+          name: "Mum",
+          personality: "Social",
+          style: "Loose-passive",
+          preview: "Calls too often; value bet, bluff less.",
+          buy_in: 200,
+          blinds: "2/4",
+          respect_required: 2,
+          status: :locked,
+          side: :right
+        },
+        %{
+          id: "sister",
+          level: "LEVEL 3",
+          name: "Sister",
+          personality: "Focused",
+          style: "Tight-aggressive",
+          preview: "Selective hands, then applies pressure.",
+          buy_in: 300,
+          blinds: "3/6",
+          respect_required: 3,
+          status: :locked,
+          side: :left
+        },
+        %{
+          id: "brother",
+          level: "LEVEL 4",
+          name: "Brother",
+          personality: "Impulsive and unpredictable",
+          style: "Loose-aggressive",
+          preview: "Wide range; frequent bets and bluffs.",
+          buy_in: 400,
+          blinds: "4/8",
+          respect_required: 4,
+          status: :locked,
+          side: :right
+        },
+        %{
+          id: "dad",
+          level: "LEVEL 5 · FINAL HOME MATCH",
+          name: "Dad",
+          personality: "Steady and readable",
+          style: "Straightforward, value-heavy",
+          preview: "Large bets tend strong; practise disciplined folds.",
+          buy_in: 500,
+          blinds: "5/10",
+          respect_required: 5,
+          status: :locked,
+          side: :left
+        }
+      ]
+    },
+    %{
+      id: "house-tournament",
+      name: "House Tournament",
+      eyebrow: "FINAL EVENT",
+      detail: "The last stop after the family matches.",
+      status: :locked,
+      personality: "The family field",
+      style: "Multiway tournament",
+      preview: "A multiway final event for the Home opponents; Teddy sits it out.",
+      buy_in: 2500,
+      respect_required: 6
+    }
+  ]
+
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
     socket =
       socket
       |> assign(:page_title, "Play")
+      |> assign(:play_screen, :journey)
+      |> assign(:journey_locations, @journey_locations)
       |> assign(:game_session, nil)
       |> assign(:game_view, nil)
       |> assign(:hand_id, 0)
       |> assign(:hero_total_chips, PokerHealth.starting_chips())
       |> assign(:bot_total_chips, PokerHealth.starting_chips())
+      |> assign(:campaign_cash, 1000)
+      |> assign(:respect, 0)
       |> assign(:hero_health_chips, PokerHealth.starting_chips())
       |> assign(:bot_health_chips, PokerHealth.starting_chips())
       |> assign(:match_over, false)
       |> assign(:raise_to, "")
+      |> assign(:raise_adjusted, false)
       |> assign(:game_message, nil)
       |> assign(:game_error, nil)
       |> assign(:hero_folded, false)
@@ -26,7 +132,7 @@ defmodule ZoonkWeb.Live.Play do
       |> assign(:history_street, "Preflop")
       |> assign(:streets, [{"Preflop", "PRE"}, {"Flop", "FLOP"}, {"Turn", "TURN"}, {"River", "RIVER"}])
 
-    {:ok, deal_new_hand(socket)}
+    {:ok, socket}
   end
 
   @impl Phoenix.LiveView
@@ -64,6 +170,7 @@ defmodule ZoonkWeb.Live.Play do
           {:noreply,
            socket
            |> assign(:raise_to, Integer.to_string(amount))
+           |> assign(:raise_adjusted, true)
            |> assign(:game_error, nil)}
         else
           {:noreply, socket}
@@ -97,10 +204,35 @@ defmodule ZoonkWeb.Live.Play do
       {:noreply,
        socket
        |> assign(:raise_to, Integer.to_string(amount))
+       |> assign(:raise_adjusted, true)
        |> assign(:game_error, nil)}
     else
       {:noreply, socket}
     end
+  end
+
+  def handle_event("start-match", _params, socket) do
+    socket =
+      cond do
+        socket.assigns.match_over ->
+          socket
+          |> assign(:hero_total_chips, PokerHealth.starting_chips())
+          |> assign(:bot_total_chips, PokerHealth.starting_chips())
+          |> assign(:match_over, false)
+          |> deal_new_hand()
+
+        is_nil(socket.assigns.game_session) ->
+          deal_new_hand(socket)
+
+        true ->
+          socket
+      end
+
+    {:noreply, assign(socket, :play_screen, :table)}
+  end
+
+  def handle_event("back-to-journey", _params, socket) do
+    {:noreply, assign(socket, :play_screen, :journey)}
   end
 
   def handle_event("new-hand", _params, %{assigns: %{match_over: true}} = socket) do
@@ -126,6 +258,7 @@ defmodule ZoonkWeb.Live.Play do
      |> assign(:history_street, history_street)
      |> assign(:hero_folded, action == "fold")
      |> assign(:raise_to, chip_text(view.min_raise))
+     |> assign(:raise_adjusted, false)
      |> assign(:game_message, hand_message(view, action))
      |> assign(:game_error, nil)
      |> update_battle_totals(view)}
@@ -154,6 +287,7 @@ defmodule ZoonkWeb.Live.Play do
     |> update(:hand_id, &(&1 + 1))
     |> assign(:hero_folded, false)
     |> assign(:raise_to, chip_text(view.min_raise))
+    |> assign(:raise_adjusted, false)
     |> assign(:game_message, nil)
     |> assign(:game_error, nil)
   end
@@ -170,7 +304,7 @@ defmodule ZoonkWeb.Live.Play do
           |> assign(:match_over, match_over)
 
         if match_over do
-          winner = if hero_chips > bot_chips, do: "You take the match", else: "Bot takes the match"
+          winner = if hero_chips > bot_chips, do: "You take the match", else: "Teddy takes the match"
           message = [socket.assigns.game_message, winner] |> Enum.reject(&is_nil/1) |> Enum.join(" · ")
           assign(socket, :game_message, message)
         else
@@ -189,7 +323,7 @@ defmodule ZoonkWeb.Live.Play do
   end
 
   defp hand_message(%{round: "Complete", winner: winner, pot: pot} = view, action) when winner in [0, 1] do
-    {player, verb} = if winner == 0, do: {"You", "win"}, else: {"Bot", "wins"}
+    {player, verb} = if winner == 0, do: {"You", "win"}, else: {"Teddy", "wins"}
     amount = chip_text(pot)
 
     if action == "fold" or view.bot_cards == [] do
@@ -205,7 +339,7 @@ defmodule ZoonkWeb.Live.Play do
   defp blind_history do
     [
       %{street: "Preflop", actor: "You", text: "Posts 5 SB"},
-      %{street: "Preflop", actor: "Bot", text: "Posts 10 BB"}
+      %{street: "Preflop", actor: "Teddy", text: "Posts 10 BB"}
     ]
   end
 
@@ -217,7 +351,7 @@ defmodule ZoonkWeb.Live.Play do
         "raise" ->
           [
             %{street: street, actor: "You", text: "Raise to #{chip_text(amount)}"},
-            %{street: street, actor: "Bot", text: "Call"}
+            %{street: street, actor: "Teddy", text: "Call"}
           ]
 
         "call" ->
@@ -226,7 +360,7 @@ defmodule ZoonkWeb.Live.Play do
         "check" ->
           [
             %{street: street, actor: "You", text: "Check"},
-            %{street: street, actor: "Bot", text: "Check"}
+            %{street: street, actor: "Teddy", text: "Check"}
           ]
 
         "fold" ->

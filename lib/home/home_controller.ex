@@ -15,7 +15,7 @@ defmodule ZoonkWeb.Controller.Home do
   def welcome(conn, _params) do
     conn = assign(conn, :app, Organizations.get_app_school!(conn.assigns.school))
     conn = put_layout(conn, html: {ZoonkWeb.Layouts, :auth})
-    render(conn, :welcome, csrf_token: Plug.CSRFProtection.get_csrf_token())
+    render(conn, :welcome, csrf_token: Plug.CSRFProtection.get_csrf_token(), is_welcome_page: true)
   end
 
   def start(%{assigns: %{current_user: user}} = conn, _params) when not is_nil(user), do: redirect(conn, to: ~p"/home")

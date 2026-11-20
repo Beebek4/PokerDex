@@ -21,4 +21,17 @@ defmodule ZoonkWeb.Layouts do
   @spec page_title(String.t() | nil, School.t() | nil) :: String.t()
   def page_title(nil, school), do: school_name(school)
   def page_title(title, _school), do: title
+
+  @legacy_suit_avatars [
+    "/images/poker/suits/spade.png",
+    "/images/poker/suits/heart.png",
+    "/images/poker/suits/diamond.png",
+    "/images/poker/suits/club.png"
+  ]
+
+  defp navbar_avatar(nil), do: ~p"/images/poker/characters/hero.png"
+
+  defp navbar_avatar(avatar) when avatar in @legacy_suit_avatars, do: ~p"/images/poker/characters/hero.png"
+
+  defp navbar_avatar(avatar), do: avatar
 end
