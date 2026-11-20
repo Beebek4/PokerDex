@@ -1,6 +1,10 @@
 # The directory Mix will write compiled artifacts to.
 /_build/
 
+# Rust native poker engine build output.
+/native/poker_native/target/
+/priv/native/
+
 # If you run "mix test --cover", coverage assets end up here.
 /cover/
 

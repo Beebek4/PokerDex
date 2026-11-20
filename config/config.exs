@@ -58,6 +58,10 @@ config :zoonk, Oban,
 # at the `config/runtime.exs`.
 config :zoonk, Zoonk.Mailer, adapter: Swoosh.Adapters.Local
 
+config :zoonk, Zoonk.Poker.Native,
+  crate: :poker_native,
+  path: "native/poker_native"
+
 # Configures the endpoint
 config :zoonk, ZoonkWeb.Endpoint,
   url: [host: "localhost"],

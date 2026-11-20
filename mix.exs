@@ -66,6 +66,7 @@ defmodule Zoonk.MixProject do
       {:postgrex, "~> 0.18.0"},
       {:req, "~> 0.5.1"},
       {:resend, "~> 0.4.2"},
+      {:rustler, "== 0.38.0", runtime: false},
       {:sentry, "~> 10.6.1"},
       {:sobelow, "~> 0.13.0", only: [:dev, :test], runtime: false},
       {:styler, "~> 1.0.0-rc.2", only: [:dev, :test], runtime: false},
