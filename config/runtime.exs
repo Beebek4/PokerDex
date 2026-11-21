@@ -32,7 +32,7 @@ if config_env() in [:prod, :dev] do
     region: System.get_env("AWS_REGION")
 
   config :ex_aws,
-    debug_requests: true,
+    debug_requests: config_env() == :dev,
     json_coded: Jason,
     access_key_id: {:system, "AWS_ACCESS_KEY_ID"},
     secret_access_key: {:system, "AWS_SECRET_ACCESS_KEY"}
@@ -91,26 +91,20 @@ if config_env() == :prod do
   #       force_ssl: [hsts: true]
   #
   # Check `Plug.SSL` for all available options in `force_ssl`.
-  host = System.get_env("PHX_HOST")
-  port = String.to_integer(System.get_env("PORT") || "8080")
+  host =
+    System.get_env("PHX_HOST") || System.get_env("RENDER_EXTERNAL_HOSTNAME") ||
+      raise """
+      neither PHX_HOST nor RENDER_EXTERNAL_HOSTNAME is set.
+      Set PHX_HOST to the public hostname for this deployment.
+      """
 
-  # Start a new server using FLAME and Fly
-  config :flame, FLAME.FlyBackend,
-    cpu_kind: "performance",
-    cpus: 4,
-    token: System.get_env("FLY_API_TOKEN"),
-    memory_mb: 8192,
-    env: %{
-      "AWS_ACCESS_KEY_ID" => System.get_env("AWS_ACCESS_KEY_ID"),
-      "AWS_SECRET_ACCESS_KEY" => System.get_env("AWS_SECRET_ACCESS_KEY"),
-      "AWS_REGION" => System.get_env("AWS_REGION"),
-      "BUCKET_NAME" => System.get_env("BUCKET_NAME"),
-      "AWS_ENDPOINT_URL_S3" => System.get_env("AWS_ENDPOINT_URL_S3"),
-      "AWS_CDN_URL" => System.get_env("AWS_CDN_URL") || System.get_env("AWS_ENDPOINT_URL_S3"),
-      "DATABASE_URL" => database_url
-    }
+  port = String.to_integer(System.get_env("PORT") || "10000")
+  ip = if maybe_ipv6 == [], do: {0, 0, 0, 0}, else: {0, 0, 0, 0, 0, 0, 0, 0}
 
-  config :flame, :backend, FLAME.FlyBackend
+  # The current free web deployment does not run background jobs. An idle
+  # queue poll would prevent a free serverless Postgres database from scaling
+  # down while the web app is awake.
+  config :flame, :backend, FLAME.LocalBackend
 
   # Sentry configuration
   config :sentry,
@@ -120,6 +114,8 @@ if config_env() == :prod do
     root_source_code_paths: [File.cwd!()],
     tags: %{env: :prod}
 
+  config :zoonk, Oban, queues: [], plugins: []
+
   ## Configuring the mailer
   config :zoonk, Zoonk.Mailer,
     adapter: Resend.Swoosh.Adapter,
@@ -127,19 +123,20 @@ if config_env() == :prod do
 
   config :zoonk, Zoonk.Repo,
     url: database_url,
-    pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
+    pool_size: String.to_integer(System.get_env("POOL_SIZE") || "5"),
     socket_options: maybe_ipv6,
     ssl: [cacerts: :public_key.cacerts_get()],
     connect_timeout: 30_000
 
   config :zoonk, ZoonkWeb.Endpoint,
     url: [host: host, port: 443, scheme: "https"],
+    force_ssl: [rewrite_on: [:x_forwarded_proto], hsts: true],
     check_origin: :conn,
     http: [
       # Enable IPv6 and bind on all interfaces.
       # Set it to  {0, 0, 0, 0, 0, 0, 0, 1} for local network only access.
       # for details about using IPv6 vs IPv4 and loopback vs public addresses.
-      ip: {0, 0, 0, 0, 0, 0, 0, 0},
+      ip: ip,
       port: port
     ],
     secret_key_base: secret_key_base

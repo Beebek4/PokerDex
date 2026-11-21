@@ -13,8 +13,11 @@ defmodule Zoonk.Content.PokerHealth do
 
   def starting_chips, do: @starting_chips
 
-  def settle(%{winner: winner, is_tie: is_tie, hero_stack: hero_stack, bot_stack: bot_stack}) when is_integer(winner) or is_tie do
-    match_over? = hero_stack <= @hero_blind or bot_stack <= @bot_blind
+  def settle(view), do: settle(view, @hero_blind, @bot_blind)
+
+  def settle(%{winner: winner, is_tie: is_tie, hero_stack: hero_stack, bot_stack: bot_stack}, hero_blind, bot_blind)
+      when (is_integer(winner) or is_tie) and is_number(hero_blind) and is_number(bot_blind) do
+    match_over? = hero_stack <= hero_blind or bot_stack <= bot_blind
 
     {hero_chips, bot_chips} =
       if match_over? do
@@ -27,8 +30,9 @@ defmodule Zoonk.Content.PokerHealth do
     {:settled, hero_chips, bot_chips, match_over?}
   end
 
-  def settle(_view), do: :in_progress
+  def settle(_view, _hero_blind, _bot_blind), do: :in_progress
 
-  def green_width(chips), do: max(0, min(100, round(chips)))
-  def gold_width(chips), do: max(0, min(100, round(chips - @starting_chips)))
+  def green_width(chips, starting_chips \\ @starting_chips) when starting_chips > 0, do: max(0, min(100, round(chips / starting_chips * 100)))
+
+  def gold_width(chips, starting_chips \\ @starting_chips) when starting_chips > 0, do: max(0, min(100, round((chips - starting_chips) / starting_chips * 100)))
 end

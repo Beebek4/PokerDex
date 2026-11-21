@@ -12,6 +12,24 @@ defmodule Zoonk.Poker.NativeTest do
     assert "Complete" = Native.simulate_calling_agents()
   end
 
+  test "the tournament engine starts a six-player hand with rotating blind positions" do
+    stacks = List.duplicate(2_500.0, 6)
+    {_session, view} = Native.start_tournament_hand(stacks, 0, 10.0, 20.0)
+
+    assert view.round == "Preflop"
+    assert view.dealer_idx == 0
+    assert view.small_blind_idx == 1
+    assert view.big_blind_idx == 2
+    assert view.acting_player == 3
+    assert length(view.player_stacks) == 6
+    assert length(view.player_hole_cards) == 6
+    assert Enum.all?(view.player_hole_cards, &(&1 == []))
+    assert length(view.hero_cards) == 2
+    assert Enum.at(view.player_stacks, 1) == 2_490.0
+    assert Enum.at(view.player_stacks, 2) == 2_480.0
+    assert view.pot == 30.0
+  end
+
   test "a human call pauses through the NIF while the bot advances to the flop" do
     {session, preflop} = Native.start_human_hand()
 

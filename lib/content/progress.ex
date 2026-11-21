@@ -4,34 +4,24 @@ defmodule ZoonkWeb.Live.Progress do
 
   alias Zoonk.Content
   alias Zoonk.Content.CourseUtils
+  alias Zoonk.Poker.Campaigns
 
   @theory_difficulties [beginner: "Beginner", intermediate: "Intermediate", advanced: "Advanced"]
   @puzzle_streets ~w(preflop flop turn river showdown)
-  @play_opponents ["Teddy", "Grandpa", "Mum", "Sister", "Brother", "Dad"]
 
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
     attempts = Content.list_user_scenario_attempts(socket.assigns.current_user.id)
     puzzle_progress = puzzle_progress(attempts)
     theory_progress = theory_progress(socket.assigns.school, socket.assigns.current_user)
+    play_progress = Campaigns.get_progress(socket.assigns.current_user.id)
 
     {:ok,
      socket
      |> assign(:page_title, "Progress")
      |> assign(:puzzle_progress, puzzle_progress)
      |> assign(:theory_progress, theory_progress)
-     |> assign(:play_progress, play_progress())}
-  end
-
-  defp play_progress do
-    opponents =
-      Enum.map(@play_opponents, fn name ->
-        %{name: name, faced: 0, wins: 0, win_percentage: 0}
-      end)
-
-    tournament = %{faced: 0, wins: 0, win_percentage: 0, bracelet_earned: false}
-
-    %{opponents: opponents, tournament: tournament}
+     |> assign(:play_progress, play_progress)}
   end
 
   defp theory_progress(school, user) do

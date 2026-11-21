@@ -1,0 +1,10 @@
+#!/bin/sh
+set -eu
+
+cd -P -- "$(dirname -- "$0")"
+
+# Render's free plan has no separate pre-deploy command, so apply schema
+# updates and safe public curriculum data before starting the web server.
+./zoonk eval 'Zoonk.Release.migrate()'
+./zoonk eval 'Zoonk.Release.seed()'
+PHX_SERVER=true exec ./zoonk start

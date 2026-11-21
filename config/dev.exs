@@ -19,15 +19,25 @@ config :phoenix_live_view,
 # Disable swoosh api client as it is only required for production adapters.
 config :swoosh, :api_client, false
 
-# Configure your database
-config :zoonk, Zoonk.Repo,
-  username: "postgres",
-  password: "postgres",
-  hostname: "localhost",
-  database: "zoonk_dev",
-  stacktrace: true,
-  show_sensitive_data_on_connection_error: true,
-  pool_size: 10
+# Configure your database. When DATABASE_URL is present, use the Neon pooled
+# connection for the long-running Phoenix server. Otherwise keep the local DB.
+if database_url = System.get_env("DATABASE_URL") do
+  config :zoonk, Zoonk.Repo,
+    url: database_url,
+    ssl: [cacerts: :public_key.cacerts_get()],
+    stacktrace: true,
+    show_sensitive_data_on_connection_error: true,
+    pool_size: String.to_integer(System.get_env("POOL_SIZE") || "5")
+else
+  config :zoonk, Zoonk.Repo,
+    username: "postgres",
+    password: "postgres",
+    hostname: "localhost",
+    database: "zoonk_dev",
+    stacktrace: true,
+    show_sensitive_data_on_connection_error: true,
+    pool_size: 10
+end
 
 # For development, we disable any cache and enable
 # debugging and code reloading.
@@ -38,7 +48,7 @@ config :zoonk, Zoonk.Repo,
 config :zoonk, ZoonkWeb.Endpoint,
   # Binding to loopback ipv4 address prevents access from other machines.
   # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
-  http: [ip: {0, 0, 0, 0}, port: 4000],
+  http: [ip: {0, 0, 0, 0}, port: String.to_integer(System.get_env("PORT") || "4000")],
   https: [
     ip: {0, 0, 0, 0},
     port: 4001,
@@ -64,5 +74,9 @@ config :zoonk, ZoonkWeb.Endpoint,
     ]
   ]
 
+config :zoonk, :play_preview_all_opponents, true
+
 # Enable dev routes for dashboard and mailbox
 config :zoonk, dev_routes: true
+
+# Allows local visual review of every Home opponent without changing campaign progress.
