@@ -130,9 +130,18 @@ defmodule Zoonk.Organizations.School do
 
   defp domain_exists?(changeset) do
     domain = extract_domain(changeset)
+    current_school_id = get_field(changeset, :id)
 
-    School
-    |> where([school], fragment("? ILIKE '%' || ?", school.custom_domain, ^domain))
-    |> Repo.exists?()
+    query =
+      where(School, [school], fragment("? ILIKE '%' || ?", school.custom_domain, ^domain))
+
+    query =
+      if current_school_id do
+        where(query, [school], school.id != ^current_school_id)
+      else
+        query
+      end
+
+    Repo.exists?(query)
   end
 end
