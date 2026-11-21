@@ -52,3 +52,5 @@ cert
 # Dialyzer
 /priv/plts/*.plt
 /priv/plts/*.plt.hash
+.neon
+node_modules/

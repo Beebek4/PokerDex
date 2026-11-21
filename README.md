@@ -40,17 +40,48 @@ When updating an existing checkout, apply pending database changes with `mix ect
 
 The local HTTPS listener uses a development certificate that browsers may not trust. Use the HTTP address above for normal local work; HTTPS on port 4001 is optional.
 
+## Free preview deployment (Render + Neon)
+
+The repository includes a Docker release and Render Blueprint for a no-cost preview deployment. Render runs the Phoenix app, and Neon provides PostgreSQL. This is suitable for trying the site with a small number of users; it is not a durable production service with uptime guarantees.
+
+1. Push this repository to GitHub.
+2. Create a free PostgreSQL project on [Neon](https://neon.tech/). Copy its pooled connection string and keep the password private.
+3. In [Render](https://render.com/), create a Blueprint from this GitHub repository and use the checked-in `render.yaml`.
+4. When Render asks for `DATABASE_URL` and `DATABASE_URL_UNPOOLED`, paste Neon's pooled and direct connection strings respectively. Keep the generated `SECRET_KEY_BASE`; do not commit secrets.
+5. Wait for the first image build and deployment, then open the `.onrender.com` address shown by Render. On startup the service applies database migrations and creates/updates the public PokerDex school and authored curriculum.
+
+Render also needs `DATABASE_URL_UNPOOLED` from Neon for schema migrations. Set it in the Render service's environment variables alongside `DATABASE_URL`; the app uses the pooled URL for normal requests and the direct URL only for migrations. Both values are stored as secret environment variables. The service is placed in Render's Ohio region to match this project's Neon region.
+
+To run the local app against the Neon production branch, load the pulled variables and apply migrations through the direct URL:
+
+```sh
+set -a
+source .env.local
+set +a
+DATABASE_URL="$DATABASE_URL_UNPOOLED" mix ecto.migrate
+mix phx.server
+```
+
+This points your local app at the production database. Use the default local PostgreSQL setup for routine development, and avoid running `mix seed` against Neon because it creates a development administrator account.
+
+The deployment deliberately does not run `mix seed`: that development seed creates an administrator with a published demo password. It uses a separate safe release seed instead. Re-running deployment startup is designed to be repeatable.
+
+Free-tier limits matter: Render's free web service has 512 MB memory and 750 instance-hours per month, sleeps after 15 minutes without requests, and the first visit after sleep can take about a minute. It has no persistent local disk. Neon Free currently includes 100 compute-hours per month and 1 GB storage per project; it scales compute to zero when idle and can suspend workloads at its quotas. Keep durable user and campaign data in PostgreSQL; do not rely on local files for uploads. Account email confirmation/recovery needs a Resend API key, and user-uploaded image storage needs an S3-compatible bucket; neither is included in the $0 setup. Background Oban jobs are disabled on the free deployment to avoid continuous database polling. Review both providers' current limits before inviting users or relying on saved data.
+
+The free service is configured for Render's Ohio region to match the existing Neon project. That keeps app-to-database traffic close, though it adds some latency for visitors in the UK and Europe. This setup uses the provider's free `onrender.com` hostname; a custom domain generally requires owning a domain name.
+
 ### Useful commands
 
 ```sh
 mix test                 # run the test suite
 mix seed                 # add missing local demo data
 mix phx.server           # start the development server
+npm run build            # build production assets and compile the Phoenix app
 ```
 
 ## Data and content
 
-PostgreSQL stores users, lessons, answers, poker campaign balances, and match records. Authored puzzle content lives in `lib/content/holdem_curriculum.ex`; Theory topics and lessons live in `lib/content/holdem_theory_curriculum.ex`. `priv/repo/seed/holdem_curriculum.ex` writes both to the local database. The seed process is for development only—do not run it against a production database.
+PostgreSQL stores users, lessons, answers, poker campaign balances, and match records. Authored puzzle content lives in `lib/content/holdem_curriculum.ex`; Theory topics and lessons live in `lib/content/holdem_theory_curriculum.ex`. `priv/repo/seed/holdem_curriculum.ex` writes both to the local database. The `mix seed` command is for development only—do not run it against a production database. The Render release uses `Zoonk.ProductionSeed`, which omits demo accounts and only provisions the public PokerDex school and curriculum.
 
 Scenario structure and review requirements are documented in [HOLDEM_CONTENT_CONTRACT.md](HOLDEM_CONTENT_CONTRACT.md). The product roadmap and completed work are in [HOLDEM_TRAINER_PLAN.md](HOLDEM_TRAINER_PLAN.md).
 
@@ -62,7 +93,7 @@ The topic-led Theory page follows the progression in [HOLDEM_THEORY_CURRICULUM.m
 - `lib/poker/` — opponent catalogue, shared bot policy and styles, campaign context, and campaign/match schemas.
 - `lib/accounts/` and `lib/organizations/` — accounts and the school context currently used by the inherited app foundation.
 - `priv/repo/migrations/` — database schema changes.
-- `priv/repo/seed/` — local PokerDex demo users and curriculum.
+- `priv/repo/seed/` — local PokerDex demo users and curriculum; production seeding is in `lib/production_seed.ex`.
 - `assets/` — Tailwind styles and browser code.
 - `native/poker_native/` — Rustler NIF using `rs-poker` for the Play table prototype.
 - `test/` — domain, database, and LiveView tests.

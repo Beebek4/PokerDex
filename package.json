@@ -1,0 +1,9 @@
+{
+  "scripts": {
+    "build": "mix assets.deploy"
+  },
+  "dependencies": {
+    "@neon/config": "^1.14.5",
+    "@neon/env": "^2.1.8"
+  }
+}

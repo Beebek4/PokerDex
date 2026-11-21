@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: pokerdex
+    runtime: docker
+    plan: free
+    region: ohio
+    healthCheckPath: /
+    startCommand: /app/bin/render-start
+    envVars:
+      - key: PORT
+        value: "10000"
+      - key: PHX_SERVER
+        value: "true"
+      - key: SECRET_KEY_BASE
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_URL_UNPOOLED
+        sync: false
+      - key: POOL_SIZE
+        value: "5"
