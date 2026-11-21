@@ -53,12 +53,24 @@ if config_env() == :prod do
   # want to use a different value for prod and you most likely don't want
   # to check this value into version control, so we use an environment
   # variable instead.
-  secret_key_base =
+  configured_secret_key_base =
     System.get_env("SECRET_KEY_BASE") ||
       raise """
       environment variable SECRET_KEY_BASE is missing.
       You can generate one by calling: mix phx.gen.secret
       """
+
+  # Render's generated 256-bit base64 secrets can be shorter than Plug's
+  # 64-byte minimum. Derive a stable 512-bit key so cookies remain valid
+  # across restarts while preserving the generated secret's entropy.
+  secret_key_base =
+    if byte_size(configured_secret_key_base) >= 64 do
+      configured_secret_key_base
+    else
+      configured_secret_key_base
+      |> then(&:crypto.hash(:sha512, &1))
+      |> Base.encode64(padding: false)
+    end
 
   # ## SSL Support
   #
