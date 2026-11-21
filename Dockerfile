@@ -57,4 +57,4 @@ COPY --from=builder --chown=nobody:root /app/_build/prod/rel/zoonk ./
 
 USER nobody
 EXPOSE 10000
-CMD ["/app/bin/server"]
+CMD ["/app/bin/render-start"]

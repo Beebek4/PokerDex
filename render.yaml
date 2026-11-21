@@ -5,7 +5,6 @@ services:
     plan: free
     region: ohio
     healthCheckPath: /
-    startCommand: /app/bin/render-start
     envVars:
       - key: PORT
         value: "10000"
