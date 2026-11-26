@@ -6,7 +6,7 @@ ARG OTP_VERSION=29
 FROM elixir:${ELIXIR_VERSION}-otp-${OTP_VERSION} AS builder
 
 RUN apt-get update -y && apt-get install -y --no-install-recommends \
-    build-essential ca-certificates curl git \
+    build-essential ca-certificates cmake curl git \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
