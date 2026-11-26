@@ -95,7 +95,7 @@ defmodule Zoonk.Poker.NativeTest do
     end
 
     assert_raise ArgumentError, fn ->
-      Native.human_action(session, "raise", 100.0)
+      Native.human_action(session, "raise", -1.0)
     end
 
     flop = Native.human_action(session, "call", 0.0)

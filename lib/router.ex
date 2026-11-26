@@ -50,12 +50,24 @@ defmodule ZoonkWeb.Router do
     plug :accepts, ["json"]
   end
 
+  pipeline :retention_api do
+    plug :accepts, ["json"]
+    plug :fetch_session
+    plug :protect_from_forgery
+    plug :fetch_current_user
+  end
+
   # We don't have an actual home page. It redirects to the most recent course or the course list.
   scope "/", ZoonkWeb.Controller do
     pipe_through :browser
     get "/", Home, :index
     get "/welcome", Home, :welcome
     post "/start", Home, :start
+  end
+
+  scope "/retention", ZoonkWeb.Controller do
+    pipe_through :retention_api
+    post "/events", RetentionEvents, :create
   end
 
   ## Authentication routes
@@ -103,6 +115,7 @@ defmodule ZoonkWeb.Router do
     live_session :requires_authentication,
       on_mount: [
         {UserAuth, :ensure_authenticated},
+        {ZoonkWeb.Plugs.DailyReward, :claim_daily_reward},
         {School, :mount_school},
         {Translate, :set_locale_from_session},
         {Course, :mount_course},

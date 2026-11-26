@@ -421,6 +421,21 @@
   isolation: isolate;
 }
 
+.play-dealer-button {
+  display: flex;
+  width: clamp(1.1rem, 3vw, 1.5rem);
+  aspect-ratio: 1;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #5a3b12;
+  border-radius: 999px;
+  background: linear-gradient(145deg, #fff0b0, #d6a83f);
+  color: #2c1320;
+  font-size: 0.62rem;
+  font-weight: 900;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 45%);
+}
+
 .play-health-shell::after {
   position: absolute;
   z-index: 3;
@@ -631,7 +646,7 @@
     width: clamp(3.75rem, 13vw, 4.75rem);
   }
 
-  .play-tournament-live-seat > img {
+  .play-tournament-avatar-button {
     height: clamp(3.8rem, 9vh, 5rem);
   }
 
@@ -1041,6 +1056,10 @@ button.play-route-character-trigger:focus-visible {
   border-radius: 1rem;
   padding: 0.65rem 0.75rem;
   text-align: left;
+  font: inherit;
+  appearance: none;
+  cursor: pointer;
+  transition: transform 180ms ease, border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
 }
 
 .play-route-card.is-open {
@@ -1049,6 +1068,36 @@ button.play-route-character-trigger:focus-visible {
   background: linear-gradient(145deg, rgb(95 75 102 / 96%), rgb(44 19 32 / 96%));
   color: white;
   box-shadow: 0 8px 22px rgb(0 0 0 / 30%), 0 0 0 1px rgb(240 209 126 / 10%);
+}
+
+.play-route-card:hover,
+.play-route-card:focus-visible {
+  z-index: 2;
+  transform: translateY(-3px) scale(1.025);
+  border-color: rgb(240 209 126 / 90%);
+  box-shadow: 0 12px 28px rgb(0 0 0 / 38%), 0 0 20px rgb(240 209 126 / 24%);
+  outline: none;
+}
+
+.play-route-card:active {
+  transform: translateY(-1px) scale(1.005);
+}
+
+.play-route-profile-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.35rem;
+  color: #f0d17e;
+  font-size: 0.68rem;
+  font-weight: 800;
+  transition: gap 180ms ease, color 180ms ease;
+}
+
+.play-route-card:hover .play-route-profile-cta,
+.play-route-card:focus-visible .play-route-profile-cta {
+  gap: 0.45rem;
+  color: #ffe9ab;
 }
 
 .play-route-stop.is-left .play-route-card {
@@ -1062,6 +1111,130 @@ button.play-route-character-trigger:focus-visible {
   background: rgb(44 19 32 / 55%);
   color: #c8c4d0;
   opacity: 0.78;
+}
+
+.play-route-card.is-locked:hover,
+.play-route-card.is-locked:focus-visible {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .play-route-card,
+  .play-route-profile-cta {
+    transition: none;
+  }
+}
+
+.play-opponent-image-trigger {
+  appearance: none;
+  padding: 0;
+  cursor: pointer;
+  transition: filter 180ms ease;
+}
+
+.play-opponent-image-trigger:hover,
+.play-opponent-image-trigger:focus-visible {
+  filter: drop-shadow(0 0 0.65rem rgb(240 209 126 / 80%)) brightness(1.08);
+}
+
+.play-tournament-avatar-button {
+  display: block;
+  width: 100%;
+  height: clamp(4.8rem, 13vh, 7.5rem);
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  transition: transform 180ms ease, filter 180ms ease;
+}
+
+.play-tournament-avatar-button > img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 3px 5px rgb(0 0 0 / 65%));
+}
+
+.play-tournament-avatar-button:hover,
+.play-tournament-avatar-button:focus-visible {
+  transform: scale(1.045);
+  filter: drop-shadow(0 0 0.65rem rgb(240 209 126 / 80%));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .play-opponent-image-trigger,
+  .play-tournament-avatar-button {
+    transition: none;
+  }
+}
+
+.poker-metric-info {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  color: #a7adc6;
+}
+
+.poker-metric-info > summary {
+  display: inline-flex;
+  min-width: 1.25rem;
+  min-height: 1.25rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  cursor: pointer;
+  list-style: none;
+  transition: color 150ms ease, background-color 150ms ease, transform 150ms ease;
+}
+
+.poker-metric-info > summary::-webkit-details-marker {
+  display: none;
+}
+
+.poker-metric-info > summary:hover,
+.poker-metric-info > summary:focus-visible,
+.poker-metric-info[open] > summary {
+  transform: scale(1.08);
+  background: rgb(230 189 104 / 15%);
+  color: #f0d17e;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+.poker-metric-info-copy {
+  position: absolute;
+  z-index: 60;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  width: min(13rem, 72vw);
+  border: 1px solid rgb(230 189 104 / 40%);
+  border-radius: 0.65rem;
+  padding: 0.55rem 0.65rem;
+  background: #24131f;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 45%);
+  color: #f5f2f8;
+  font-size: 0.72rem;
+  font-weight: 500;
+  line-height: 1.4;
+  text-align: left;
+}
+
+.poker-metric-info[data-placement="above"] .poker-metric-info-copy {
+  top: auto;
+  bottom: calc(100% + 0.35rem);
+}
+
+.poker-metric-info[data-align="end"] .poker-metric-info-copy {
+  right: 0;
+  left: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .poker-metric-info > summary {
+    transition: none;
+  }
 }
 
 .play-route-stop:not(.is-left) .play-route-card.is-locked {
@@ -1273,14 +1446,6 @@ button.play-route-character-trigger:focus-visible {
   color: #2c1320;
 }
 
-.play-tournament-live-seat > img {
-  display: block;
-  width: 100%;
-  height: clamp(4.8rem, 13vh, 7.5rem);
-  object-fit: contain;
-  filter: drop-shadow(0 3px 5px rgb(0 0 0 / 65%));
-}
-
 .play-tournament-live-seat > strong {
   max-width: 100%;
   color: #fff;
@@ -1416,7 +1581,7 @@ button.play-route-character-trigger:focus-visible {
     width: clamp(3.75rem, 13vw, 4.75rem);
   }
 
-  .play-tournament-live-seat > img {
+  .play-tournament-avatar-button {
     height: clamp(3.8rem, 9vh, 5rem);
   }
 
@@ -1563,14 +1728,35 @@ button.play-route-character-trigger:focus-visible {
   color: #f0d17e;
 }
 
-.play-chips-label {
+.play-rankings-button {
+  display: inline-flex;
+  min-height: 2.25rem;
   flex: none;
+  align-items: center;
+  gap: 0.35rem;
   border-radius: 999px;
+  border: 1px solid rgb(214 177 95 / 30%);
   background: rgb(214 177 95 / 12%);
-  padding: 0.25rem 0.55rem;
+  padding: 0.25rem 0.7rem;
   color: #f0d17e;
   font-size: 0.68rem;
   font-weight: 700;
+  transition: border-color 160ms ease, background-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.play-rankings-button:hover,
+.play-rankings-button:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgb(240 209 126 / 75%);
+  background: rgb(214 177 95 / 22%);
+  box-shadow: 0 0 0.8rem rgb(240 209 126 / 24%);
+  outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .play-rankings-button {
+    transition: none;
+  }
 }
 
 .play-table-area {

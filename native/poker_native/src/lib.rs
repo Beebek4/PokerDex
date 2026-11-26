@@ -112,7 +112,12 @@ fn start_play_hand_with_button(
     big_blind: f32,
     dealer_idx: usize,
 ) -> NifResult<(ResourceArc<GameSession>, GameView)> {
-    start_session(vec![hero_total, bot_total], dealer_idx, small_blind, big_blind)
+    start_session(
+        vec![hero_total, bot_total],
+        dealer_idx,
+        small_blind,
+        big_blind,
+    )
 }
 
 #[rustler::nif]
@@ -134,7 +139,9 @@ fn start_session(
     let num_players = total_stacks.len();
 
     if !(2..=6).contains(&num_players)
-        || total_stacks.iter().any(|stack| !stack.is_finite() || *stack < 0.0)
+        || total_stacks
+            .iter()
+            .any(|stack| !stack.is_finite() || *stack < 0.0)
         || total_stacks.iter().filter(|stack| **stack > 0.0).count() < 2
         || !small_blind.is_finite()
         || !big_blind.is_finite()
@@ -150,10 +157,7 @@ fn start_session(
     } else {
         next_player_with_chips(requested_dealer_idx, &total_stacks).ok_or(Error::BadArg)?
     };
-    let live_player_count = total_stacks
-        .iter()
-        .filter(|stack| **stack > 0.0)
-        .count();
+    let live_player_count = total_stacks.iter().filter(|stack| **stack > 0.0).count();
     let small_blind_idx = if live_player_count == 2 {
         dealer_idx
     } else {
@@ -243,7 +247,11 @@ fn next_player_with_chips(after_idx: usize, stacks: &[f32]) -> Option<usize> {
 }
 
 fn hand_live_players_count_from(stacks: &[f32], contributions: &[f32]) -> usize {
-    stacks.iter().zip(contributions).filter(|(stack, contribution)| **stack > 0.0 || **contribution > 0.0).count()
+    stacks
+        .iter()
+        .zip(contributions)
+        .filter(|(stack, contribution)| **stack > 0.0 || **contribution > 0.0)
+        .count()
 }
 
 /// Apply a human action between Elixir calls, then let the call/check bot act
@@ -266,7 +274,12 @@ fn human_action(
 
     let mut deck = session.deck.lock().map_err(|_| Error::BadArg)?;
     advance_until_human_turn(&mut state, &mut deck, &mut outcome)?;
-    Ok(snapshot_locked(&state, &outcome, session.small_blind_idx, session.big_blind_idx))
+    Ok(snapshot_locked(
+        &state,
+        &outcome,
+        session.small_blind_idx,
+        session.big_blind_idx,
+    ))
 }
 
 /// Apply one player's action and stop at the next decision point. Elixir owns
@@ -289,7 +302,12 @@ fn player_action(
     apply_player_action(&mut state, &mut outcome, actor, &action, amount)?;
 
     advance_to_next_action(&mut state, &mut deck, &mut outcome)?;
-    Ok(snapshot_locked(&state, &outcome, session.small_blind_idx, session.big_blind_idx))
+    Ok(snapshot_locked(
+        &state,
+        &outcome,
+        session.small_blind_idx,
+        session.big_blind_idx,
+    ))
 }
 
 fn is_current_action(state: &GameState, actor: usize) -> bool {
@@ -312,7 +330,10 @@ fn apply_player_action(
         "fold" => {
             state.fold();
             if hand_live_players(state).count() == 1 {
-                let winner = hand_live_players(state).ones().next().ok_or(Error::BadArg)?;
+                let winner = hand_live_players(state)
+                    .ones()
+                    .next()
+                    .ok_or(Error::BadArg)?;
                 state.award(winner, state.total_pot);
                 state.complete();
                 *outcome = HandOutcome::FoldWinner(winner);
@@ -320,14 +341,18 @@ fn apply_player_action(
         }
         "call" => {
             let call_amount = state.current_round_bet();
-            state.do_bet(call_amount, false).map_err(|_| Error::BadArg)?;
+            state
+                .do_bet(call_amount, false)
+                .map_err(|_| Error::BadArg)?;
         }
         "check" => {
             if state.current_round_player_bet(actor) < state.current_round_bet() {
                 return Err(Error::BadArg);
             }
             let current_bet = state.current_round_bet();
-            state.do_bet(current_bet, false).map_err(|_| Error::BadArg)?;
+            state
+                .do_bet(current_bet, false)
+                .map_err(|_| Error::BadArg)?;
         }
         "raise" => {
             if !amount.is_finite() || amount <= state.current_round_player_bet(actor) {
@@ -349,6 +374,10 @@ fn advance_to_next_action(
     for _ in 0..8 {
         if hand_is_over(state) {
             return Ok(());
+        }
+
+        if should_run_out_after_all_in(state) {
+            return run_out_after_all_in(state, deck, outcome);
         }
 
         if state.current_round_num_active_players() > 0 {
@@ -379,6 +408,49 @@ fn advance_to_next_action(
     Err(Error::BadArg)
 }
 
+fn should_run_out_after_all_in(state: &GameState) -> bool {
+    if state.player_all_in.count() == 0 || state.player_active.count() > 1 {
+        return false;
+    }
+
+    let current_bet = state.current_round_bet();
+    (0..state.num_players)
+        .filter(|idx| state.player_active.get(*idx))
+        .all(|idx| state.current_round_player_bet(idx) + 0.0001 >= current_bet)
+}
+
+fn run_out_after_all_in(
+    state: &mut GameState,
+    deck: &mut Deck,
+    outcome: &mut HandOutcome,
+) -> NifResult<()> {
+    for _ in 0..4 {
+        if hand_is_over(state) {
+            return Ok(());
+        }
+
+        state.advance_round();
+        match state.round {
+            Round::DealFlop => {
+                deal_community_cards(state, deck, 3)?;
+                state.advance_round();
+            }
+            Round::DealTurn | Round::DealRiver => {
+                deal_community_cards(state, deck, 1)?;
+                state.advance_round();
+            }
+            Round::Showdown => {
+                settle_showdown(state, outcome)?;
+                return Ok(());
+            }
+            Round::Complete => return Ok(()),
+            _ => {}
+        }
+    }
+
+    Err(Error::BadArg)
+}
+
 fn advance_until_human_turn(
     state: &mut GameState,
     deck: &mut Deck,
@@ -395,7 +467,9 @@ fn advance_until_human_turn(
             return Err(Error::BadArg);
         }
         let call_amount = state.current_round_bet();
-        state.do_bet(call_amount, false).map_err(|_| Error::BadArg)?;
+        state
+            .do_bet(call_amount, false)
+            .map_err(|_| Error::BadArg)?;
     }
 
     Err(Error::BadArg)
@@ -443,7 +517,11 @@ fn settle_showdown(state: &mut GameState, outcome: &mut HandOutcome) -> NifResul
     let mut main_pot_winners = Vec::new();
 
     for level in levels {
-        let contributors = state.player_bet.iter().filter(|bet| **bet + 0.0001 >= level).count();
+        let contributors = state
+            .player_bet
+            .iter()
+            .filter(|bet| **bet + 0.0001 >= level)
+            .count();
         let pot = (level - previous_level) * contributors as f32;
         previous_level = level;
 
@@ -516,10 +594,20 @@ fn deal_hand<R: rand::Rng>(deck: &mut Deck, rng: &mut R) -> NifResult<Hand> {
 fn snapshot(session: &GameSession) -> NifResult<GameView> {
     let state = session.state.lock().map_err(|_| Error::BadArg)?;
     let outcome = session.outcome.lock().map_err(|_| Error::BadArg)?;
-    Ok(snapshot_locked(&state, &outcome, session.small_blind_idx, session.big_blind_idx))
+    Ok(snapshot_locked(
+        &state,
+        &outcome,
+        session.small_blind_idx,
+        session.big_blind_idx,
+    ))
 }
 
-fn snapshot_locked(state: &GameState, outcome: &HandOutcome, small_blind_idx: usize, big_blind_idx: usize) -> GameView {
+fn snapshot_locked(
+    state: &GameState,
+    outcome: &HandOutcome,
+    small_blind_idx: usize,
+    big_blind_idx: usize,
+) -> GameView {
     let acting_player = state.to_act_idx().min(state.num_players.saturating_sub(1));
     let acting_bet = state.current_round_player_bet(acting_player);
     let (winners, reveal_cards) = match outcome {
@@ -577,7 +665,10 @@ fn snapshot_locked(state: &GameState, outcome: &HandOutcome, small_blind_idx: us
             Vec::new()
         },
         bot_private_cards: if acting_player > 0 {
-            state.hands[acting_player].iter().map(|card| card.to_string()).collect()
+            state.hands[acting_player]
+                .iter()
+                .map(|card| card.to_string())
+                .collect()
         } else if state.hands.len() > 1 {
             state.hands[1].iter().map(|card| card.to_string()).collect()
         } else {
@@ -587,13 +678,21 @@ fn snapshot_locked(state: &GameState, outcome: &HandOutcome, small_blind_idx: us
         player_hole_cards: state
             .hands
             .iter()
-            .map(|hand| if reveal_cards { hand.iter().map(|card| card.to_string()).collect() } else { Vec::new() })
+            .map(|hand| {
+                if reveal_cards {
+                    hand.iter().map(|card| card.to_string()).collect()
+                } else {
+                    Vec::new()
+                }
+            })
             .collect(),
         player_contributions: state.player_bet.iter().copied().collect(),
         player_folded: (0..state.num_players)
             .map(|idx| !state.player_active.get(idx) && !state.player_all_in.get(idx))
             .collect(),
-        player_all_in: (0..state.num_players).map(|idx| state.player_all_in.get(idx)).collect(),
+        player_all_in: (0..state.num_players)
+            .map(|idx| state.player_all_in.get(idx))
+            .collect(),
         dealer_idx: state.dealer_idx,
         small_blind_idx,
         big_blind_idx,

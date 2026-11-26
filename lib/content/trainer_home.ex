@@ -4,12 +4,14 @@ defmodule ZoonkWeb.Live.TrainerHome do
 
   alias Zoonk.Content
   alias Zoonk.Content.CourseUtils
+  alias Zoonk.Poker.Campaigns
 
   @track_slugs ~w(holdem-start-here holdem-preflop holdem-flop-decisions)
 
   @impl Phoenix.LiveView
   def mount(_params, _session, socket) do
     %{current_user: user, school: school} = socket.assigns
+    campaign = Campaigns.get_or_create(user.id)
     tracks = load_tracks(school, user)
     next_lesson = next_lesson(tracks, user)
 
@@ -21,6 +23,8 @@ defmodule ZoonkWeb.Live.TrainerHome do
     socket =
       socket
       |> assign(:page_title, "Home")
+      |> assign(:campaign_cash, campaign.cash)
+      |> assign(:respect, campaign.respect)
       |> assign(:tracks, tracks)
       |> assign(:next_lesson, next_lesson)
       |> assign(:due_review, due_review)
@@ -53,4 +57,7 @@ defmodule ZoonkWeb.Live.TrainerHome do
         unless CourseUtils.lesson_completed?(user, lesson.user_lessons), do: %{course: course, lesson: lesson, resume?: false}
       end)
   end
+
+  defp home_character_path(%{avatar: "/images/poker/characters/girl_hero.png"}), do: ~p"/images/poker/characters/girl_hero.png"
+  defp home_character_path(_user), do: ~p"/images/poker/characters/hero.png"
 end

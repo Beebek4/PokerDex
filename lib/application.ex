@@ -11,11 +11,15 @@ defmodule Zoonk.Application do
   @impl Application
   def start(_type, _args) do
     flame_parent = FLAME.Parent.get()
+    analytics_worker? = System.get_env("RETENTION_ROLE") == "analytics"
+    retention_consumer? = analytics_worker? and System.get_env("KAFKA_BROKERS") not in [nil, ""]
 
     Telemetry.attach_default_logger()
     Reporter.attach()
 
     children = [
+      # Start telemetry before Repo so it observes Ecto's initialization events.
+      Zoonk.PromEx,
       # Start the Telemetry supervisor
       ZoonkWeb.Telemetry,
       # Start the Ecto repository
@@ -25,7 +29,8 @@ defmodule Zoonk.Application do
       # Start the PubSub system
       {Phoenix.PubSub, name: Zoonk.PubSub},
       # Start the Endpoint (http/https)
-      !flame_parent && ZoonkWeb.Endpoint,
+      !flame_parent && !analytics_worker? && ZoonkWeb.Endpoint,
+      retention_consumer? && Zoonk.Retention.Consumer,
       # Start a worker by calling: Zoonk.Worker.start_link(arg)
       # {Zoonk.Worker, arg}
       # FLAME pool

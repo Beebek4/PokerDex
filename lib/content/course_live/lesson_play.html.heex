@@ -62,6 +62,12 @@
         phx-click="choose-option"
         phx-value-id={@current_step.id}
         phx-value-option={option.id}
+        data-retention-event="puzzle.answered"
+        data-study-screen="practice"
+        data-study-control="answer"
+        data-study-street={@current_step.poker_scenario && @current_step.poker_scenario["street"]}
+        data-study-difficulty={@current_step.poker_scenario && @current_step.poker_scenario["difficulty"]}
+        data-study-result={if option.correct?, do: "correct", else: "incorrect"}
         disabled={!is_nil(@selected_option)}
         aria-pressed={@selected_option && @selected_option.id == option.id}
         class={[

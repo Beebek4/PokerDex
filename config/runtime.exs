@@ -116,6 +116,8 @@ if config_env() == :prod do
   # The current free web deployment does not run background jobs. An idle
   # queue poll would prevent a free serverless Postgres database from scaling
   # down while the web app is awake.
+  retention_queues = if System.get_env("KAFKA_BROKERS") in [nil, ""], do: [], else: [retention: 2]
+
   config :flame, :backend, FLAME.LocalBackend
 
   # Sentry configuration
@@ -126,7 +128,19 @@ if config_env() == :prod do
     root_source_code_paths: [File.cwd!()],
     tags: %{env: :prod}
 
-  config :zoonk, Oban, queues: [], plugins: []
+  config :zoonk, Oban, queues: retention_queues, plugins: []
+
+  if metrics_token = System.get_env("PROMETHEUS_TOKEN") do
+    config :zoonk, Zoonk.PromEx,
+      metrics_server: [
+        port: String.to_integer(System.get_env("PROMETHEUS_PORT") || "4021"),
+        path: "/metrics",
+        auth_strategy: :bearer,
+        auth_token: metrics_token
+      ]
+  else
+    config :zoonk, Zoonk.PromEx, metrics_server: []
+  end
 
   ## Configuring the mailer
   config :zoonk, Zoonk.Mailer,

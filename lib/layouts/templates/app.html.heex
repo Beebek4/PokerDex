@@ -6,7 +6,11 @@
   <.app_menu active_page={@active_page} />
 </.menu_desktop>
 
-<main :if={show_menu?(@active_page) && (@active_page != :play || @play_screen == :journey)} class="min-h-dvh bg-poker-felt flex flex-col lg:pl-72">
+<main
+  :if={show_menu?(@active_page) && (@active_page != :play || @play_screen == :journey)}
+  data-retention-opt-in={@current_user.retention_study_opt_in and Zoonk.Retention.enabled?()}
+  class="min-h-dvh bg-poker-felt flex flex-col lg:pl-72"
+>
   <header
     :if={not user_settings?(@active_page)}
     class="border-white/15 bg-[#5F4B66] sticky top-0 z-40 flex h-16 shrink-0 items-center justify-between gap-x-4 border-b px-4 text-white sm:gap-x-6 sm:px-6 lg:px-8"
@@ -30,11 +34,11 @@
 
       <span
         class="play-streak-badge border-poker-gold/40 bg-[#2C1320]/35 text-poker-gold inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-2 text-sm font-bold sm:px-3"
-        aria-label="1 day streak"
+        aria-label={"#{@daily_streak} day streak"}
       >
         <.icon name="tabler-flame" class="h-4 w-4" aria-hidden="true" />
-        <span class="sm:hidden">1</span>
-        <span class="hidden sm:inline">1 day streak</span>
+        <span class="sm:hidden"><%= @daily_streak %></span>
+        <span class="hidden sm:inline"><%= @daily_streak %> day streak</span>
       </span>
     </div>
 
@@ -96,10 +100,89 @@
   <%= @inner_content %>
 </main>
 
-<main :if={@active_page == :play && @play_screen != :journey} class="play-layout bg-[#2C1320] w-full overflow-hidden text-white">
+<main
+  :if={@active_page == :play && @play_screen != :journey}
+  data-retention-opt-in={@current_user.retention_study_opt_in and Zoonk.Retention.enabled?()}
+  class="play-layout bg-[#2C1320] w-full overflow-hidden text-white"
+>
   <%= @inner_content %>
 </main>
 
 <main :if={not show_menu?(@active_page)} class="m-auto max-w-3xl lg:max-w-5xl"><%= @inner_content %></main>
+
+<div
+  :if={@show_daily_reward?}
+  id="daily-reward-modal"
+  phx-mounted={show_modal("daily-reward-modal")}
+  data-cancel={hide_modal("daily-reward-modal")}
+  class="relative z-50 hidden"
+>
+  <div id="daily-reward-modal-bg" class="bg-[#09070B]/80 fixed inset-0 backdrop-blur-sm transition-opacity" aria-hidden="true" />
+  <div class="fixed inset-0 overflow-y-auto" aria-labelledby="daily-reward-title" aria-describedby="daily-reward-description" role="dialog" aria-modal="true" tabindex="0">
+    <div class="min-h-dvh flex items-center justify-center p-4">
+      <.focus_wrap
+        id="daily-reward-modal-container"
+        phx-window-keydown={JS.exec("data-cancel", to: "#daily-reward-modal")}
+        phx-key="escape"
+        phx-click-away={JS.exec("data-cancel", to: "#daily-reward-modal")}
+        class="relative w-full max-w-sm overflow-hidden rounded-3xl border border-poker-gold/40 bg-gradient-to-br from-[#56384F] via-[#2C1320] to-[#170C15] p-6 text-center shadow-2xl shadow-black/50 sm:p-8"
+      >
+        <button
+          type="button"
+          phx-click={JS.exec("data-cancel", to: "#daily-reward-modal")}
+          class="text-white/60 absolute top-3 right-3 rounded-lg p-2 transition hover:bg-white/10 hover:text-white"
+          aria-label="Close daily reward"
+        >
+          <.icon name="tabler-x" class="h-5 w-5" />
+        </button>
+
+        <span class="border-poker-gold/45 bg-poker-gold/10 text-poker-gold shadow-black/20 mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border shadow-lg">
+          <.icon name="tabler-gift" class="h-7 w-7" aria-hidden="true" />
+        </span>
+        <p class="tracking-[0.2em] text-poker-gold mt-5 text-xs font-extrabold uppercase">
+          Daily table bonus
+        </p>
+        <h2 id="daily-reward-title" class="mt-2 text-2xl font-black tracking-tight text-white">
+          <%= @daily_reward.day_streak %> Day Streak
+        </h2>
+        <p id="daily-reward-description" class="text-white/70 mt-2 text-sm leading-6">
+          Your daily chips are ready. Come back tomorrow to keep your streak going.
+        </p>
+        <div class="border-white/10 bg-black/15 mt-5 rounded-2xl border px-3 py-3" aria-label="Your current seven-day streak">
+          <p class="text-[10px] tracking-[0.18em] text-white/45 mb-3 font-extrabold uppercase">This week</p>
+          <div class="grid grid-cols-7 gap-1.5">
+            <div :for={day <- @daily_streak_calendar} class="flex flex-col items-center gap-1.5">
+              <span class="text-[10px] text-white/45 font-bold"><%= day.weekday %></span>
+              <span class={[
+                "flex h-8 w-8 items-center justify-center rounded-full border text-xs font-bold tabular-nums",
+                day.checked? && "border-poker-gold bg-poker-gold text-[#2C1320]",
+                !day.checked? && "border-white/15 bg-white/5 text-white/40",
+                day.today? && "ring-poker-gold/35 ring-offset-[#2C1320] ring-2 ring-offset-2"
+              ]}>
+                <.icon :if={day.checked?} name="tabler-check" class="h-4 w-4" aria-hidden="true" />
+                <span :if={!day.checked?}><%= day.day %></span>
+              </span>
+            </div>
+          </div>
+        </div>
+        <div class="border-poker-gold/30 bg-black/20 mt-6 rounded-2xl border px-4 py-5">
+          <div class="text-poker-gold flex items-center justify-center gap-3">
+            <strong class="text-4xl font-black tabular-nums">+<%= @daily_reward.reward %></strong>
+            <span class="play-stack-chip" aria-hidden="true"></span>
+          </div>
+          <p class="mt-1 text-sm font-bold text-white">daily chips</p>
+          <p class="text-white/55 mt-3 text-xs">Chip bank: <%= @daily_reward.chips %></p>
+        </div>
+        <button
+          type="button"
+          phx-click={JS.exec("data-cancel", to: "#daily-reward-modal")}
+          class="min-h-12 bg-poker-gold text-[#2C1320] shadow-black/20 mt-5 w-full rounded-xl px-5 py-3 text-sm font-extrabold shadow-lg transition hover:bg-poker-gold-light active:scale-[0.98]"
+        >
+          Let's play
+        </button>
+      </.focus_wrap>
+    </div>
+  </div>
+</div>
 
 <.flash_group flash={@flash} />

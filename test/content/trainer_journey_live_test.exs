@@ -22,17 +22,16 @@ defmodule ZoonkWeb.TrainerJourneyLiveTest do
     %{course: course, lesson: lesson}
   end
 
-  test "Home prioritizes the next lesson and lists tracks", %{conn: conn, school: school} do
-    %{course: course, lesson: lesson} = add_track(school, "holdem-start-here", "Start here")
-    lesson_step_fixture(%{lesson_id: lesson.id, content: "Welcome", kind: :readonly})
-
+  test "Home prioritizes Play and keeps learning secondary", %{conn: conn} do
     {:ok, lv, _html} = live(conn, ~p"/home")
 
-    assert has_element?(lv, "h1", "Welcome back")
-    assert has_element?(lv, "a[href='/c/#{course.slug}/#{lesson.id}']", "Start lesson")
-    assert has_element?(lv, "a[href='/c/#{course.slug}']", "View track")
+    assert has_element?(lv, "h1", "Ready to play")
+    assert has_element?(lv, "h2", "Take your seat.")
+    assert has_element?(lv, "a[href='/play']", "Play now")
     assert has_element?(lv, "a[href='/practice']", "Puzzles")
+    assert has_element?(lv, "a[href='/courses']", "Theory")
     assert has_element?(lv, "a[href='/progress']", "Progress")
+    refute has_element?(lv, "body", "Bot table in development")
   end
 
   test "Puzzles lets the learner choose a street and play a random lesson", %{conn: conn, school: school} do
@@ -159,7 +158,10 @@ defmodule ZoonkWeb.TrainerJourneyLiveTest do
 
     review_path = ~p"/review/#{course.slug}/#{lesson.id}/#{alternate_step.id}"
     {:ok, review, _html} = live(conn, review_path)
-    assert has_element?(review, "h2", get_in(alternate_scenario, ["question", "prompt"]))
+    # Poker decisions are presented through the table state and action summary,
+    # without repeating the question as a heading above the board.
+    assert has_element?(review, "section[aria-label='Poker scenario']")
+    assert has_element?(review, ".puzzle-scenario-actions")
 
     review |> form("#review-answer", %{selected_option: saved_option.id}) |> render_submit()
     assert has_element?(review, "h3", if(saved_option.score >= 100, do: "Strong choice", else: "Reasonable alternative"))

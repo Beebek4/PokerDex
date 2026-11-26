@@ -10,6 +10,8 @@ defmodule ZoonkWeb.UserSettingsLiveTest do
   alias Zoonk.Accounts
   alias Zoonk.Content
   alias Zoonk.Content.UserSelection
+  alias Zoonk.Poker.Campaign
+  alias Zoonk.Poker.Campaigns
   alias Zoonk.Repo
 
   @form "#settings-form"
@@ -182,6 +184,12 @@ defmodule ZoonkWeb.UserSettingsLiveTest do
 
     test "converts a guest account without losing its saved answers", %{conn: conn, user: user} do
       attrs = valid_user_attributes()
+      campaign = Campaigns.get_or_create(user.id)
+
+      campaign
+      |> Campaign.changeset(%{cash: 425, respect: 2, day_streak: 1, last_daily_reward_on: Date.utc_today()})
+      |> Repo.update!()
+
       course = course_fixture()
       lesson = lesson_fixture(%{course_id: course.id})
       step = lesson_step_fixture(%{lesson_id: lesson.id})
@@ -203,8 +211,13 @@ defmodule ZoonkWeb.UserSettingsLiveTest do
         |> render_submit()
 
       assert result =~ "A link to confirm your email"
-      assert Accounts.get_user!(user.id).id == user.id
+      converted_user = Accounts.get_user!(user.id)
+      assert converted_user.id == user.id
+      assert converted_user.username == attrs.username
+      assert converted_user.guest?
+      assert Zoonk.Accounts.User.valid_password?(converted_user, attrs.password)
       assert Repo.get!(UserSelection, selection.id).user_id == user.id
+      assert %Campaign{cash: 425, respect: 2} = Repo.get_by!(Campaign, user_id: user.id)
     end
   end
 

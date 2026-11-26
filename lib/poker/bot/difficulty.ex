@@ -4,7 +4,7 @@ defmodule Zoonk.Poker.Bot.Difficulty do
   @tiers %{
     "easy" => %{label: "Easy", call_adjustment: -0.12, raise_adjustment: 0.12, aggression_adjustment: -0.12, mistake_rate: 0.24},
     "standard" => %{label: "Standard", call_adjustment: 0.0, raise_adjustment: 0.0, aggression_adjustment: 0.0, mistake_rate: 0.10},
-    "hard" => %{label: "Hard", call_adjustment: 0.10, raise_adjustment: -0.08, aggression_adjustment: 0.10, mistake_rate: 0.03}
+    "hard" => %{label: "Hard", call_adjustment: 0.0, raise_adjustment: -0.08, aggression_adjustment: 0.10, mistake_rate: 0.03}
   }
   @order ~w(easy standard hard)
 

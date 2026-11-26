@@ -9,14 +9,14 @@ defmodule Zoonk.Poker.Bot.ThinkingTimeTest do
 
   test "heads-up delays stay within zero to three seconds for every style and action" do
     for style <- @styles, action <- @actions, _iteration <- 1..25 do
-      delay = ThinkingTime.delay_ms(%{policy: style}, %Decision{action: action})
+      delay = ThinkingTime.delay_ms(%{policy: style}, %Decision{action: action, amount: 0, reason: :test})
       assert delay in 0..3_000
     end
   end
 
   test "tournament delays stay within zero to two seconds for every style and action" do
     for style <- @styles, action <- @actions, _iteration <- 1..25 do
-      delay = ThinkingTime.delay_ms(%{policy: style}, %Decision{action: action}, :tournament)
+      delay = ThinkingTime.delay_ms(%{policy: style}, %Decision{action: action, amount: 0, reason: :test}, :tournament)
       assert delay in 0..2_000
     end
   end

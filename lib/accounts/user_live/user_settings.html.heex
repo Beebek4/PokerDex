@@ -77,6 +77,14 @@
       helper={dgettext("auth", "When checked, courses may play sound effects when you answer questions correctly or incorrectly.")}
     />
 
+    <.input
+      :if={@live_action == :profile}
+      field={@form[:retention_study_opt_in]}
+      type="checkbox"
+      label="Share optional product study events"
+      helper="If enabled, PokerDex records a small set of gameplay and interface events to improve the experience. This is optional; match statistics needed for your Progress page are saved either way. No cursor coordinates or raw browsing history are collected."
+    />
+
     <.input :if={@live_action == :email} field={@form[:email]} type="email" label={gettext("Email")} required />
     <.input :if={@live_action == :password} field={@form[:email]} type="hidden" value={@current_user.email} />
 

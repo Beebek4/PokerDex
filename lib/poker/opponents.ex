@@ -12,8 +12,8 @@ defmodule Zoonk.Poker.Opponents do
       difficulty: "easy",
       preview: "Not in the tournament.",
       buy_in: 0,
-      small_blind: 5,
-      big_blind: 10,
+      small_blind: 1,
+      big_blind: 2,
       respect_required: 0,
       respect_reward: 1,
       side: :right
@@ -43,9 +43,9 @@ defmodule Zoonk.Poker.Opponents do
       policy: :loose_passive,
       difficulty: "easy",
       preview: "Calls too often; value bet, bluff less.",
-      buy_in: 200,
-      small_blind: 2,
-      big_blind: 4,
+      buy_in: 125,
+      small_blind: 1,
+      big_blind: 2,
       respect_required: 2,
       respect_reward: 1,
       side: :right
@@ -59,9 +59,9 @@ defmodule Zoonk.Poker.Opponents do
       policy: :loose_aggressive,
       difficulty: "standard",
       preview: "Wide range; frequent bets and bluffs.",
-      buy_in: 300,
-      small_blind: 3,
-      big_blind: 6,
+      buy_in: 150,
+      small_blind: 1,
+      big_blind: 2,
       respect_required: 3,
       respect_reward: 1,
       side: :left
@@ -75,9 +75,9 @@ defmodule Zoonk.Poker.Opponents do
       policy: :tight_aggressive,
       difficulty: "standard",
       preview: "Selective hands, then applies pressure.",
-      buy_in: 400,
-      small_blind: 4,
-      big_blind: 8,
+      buy_in: 175,
+      small_blind: 1,
+      big_blind: 2,
       respect_required: 4,
       respect_reward: 1,
       side: :right
@@ -91,9 +91,9 @@ defmodule Zoonk.Poker.Opponents do
       policy: :value_heavy,
       difficulty: "hard",
       preview: "Large bets tend strong; practise disciplined folds.",
-      buy_in: 500,
-      small_blind: 5,
-      big_blind: 10,
+      buy_in: 200,
+      small_blind: 1,
+      big_blind: 2,
       respect_required: 5,
       respect_reward: 1,
       side: :left
@@ -108,13 +108,13 @@ defmodule Zoonk.Poker.Opponents do
     personality: "The family field",
     style: "Multiway tournament",
     preview: "A multiway final event for the Home opponents; Teddy sits it out.",
-    buy_in: 2500,
-    prize_pool: 15_000,
+    buy_in: 500,
+    prize_pool: 3_000,
     respect_required: 6,
-    respect_reward: 0,
+    respect_reward: 1,
     difficulty: "hard",
-    small_blind: 10,
-    big_blind: 20
+    small_blind: 3,
+    big_blind: 6
   }
 
   @doc "Returns the canonical opponent definitions in journey order."

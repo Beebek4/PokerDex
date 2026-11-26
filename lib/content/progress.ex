@@ -5,6 +5,7 @@ defmodule ZoonkWeb.Live.Progress do
   alias Zoonk.Content
   alias Zoonk.Content.CourseUtils
   alias Zoonk.Poker.Campaigns
+  alias Zoonk.Poker.Stats
 
   @theory_difficulties [beginner: "Beginner", intermediate: "Intermediate", advanced: "Advanced"]
   @puzzle_streets ~w(preflop flop turn river showdown)
@@ -15,13 +16,15 @@ defmodule ZoonkWeb.Live.Progress do
     puzzle_progress = puzzle_progress(attempts)
     theory_progress = theory_progress(socket.assigns.school, socket.assigns.current_user)
     play_progress = Campaigns.get_progress(socket.assigns.current_user.id)
+    playstyle = Stats.get_player_profile(socket.assigns.current_user.id)
 
     {:ok,
      socket
      |> assign(:page_title, "Progress")
      |> assign(:puzzle_progress, puzzle_progress)
      |> assign(:theory_progress, theory_progress)
-     |> assign(:play_progress, play_progress)}
+     |> assign(:play_progress, play_progress)
+     |> assign(:playstyle, playstyle)}
   end
 
   defp theory_progress(school, user) do

@@ -63,3 +63,63 @@ liveSocket.connect();
 // >> liveSocket.enableLatencySim(1000)  // enabled for duration of browser session
 // >> liveSocket.disableLatencySim()
 window.liveSocket = liveSocket;
+
+// Optional, semantic study events only. This deliberately ignores free text,
+// pointer coordinates, and events outside controls explicitly marked in HEEx.
+const studyEvents = [];
+const studyCsrfToken = csrfToken;
+let studyFlushTimer;
+
+function flushStudyEvents() {
+  if (studyFlushTimer) clearTimeout(studyFlushTimer);
+  studyFlushTimer = undefined;
+  if (!studyEvents.length) return;
+
+  const events = studyEvents.splice(0, 50);
+  fetch("/retention/events", {
+    method: "POST",
+    credentials: "same-origin",
+    headers: {
+      "content-type": "application/json",
+      "x-csrf-token": studyCsrfToken,
+    },
+    body: JSON.stringify({ events }),
+    keepalive: true,
+  }).then((response) => {
+    if (response.status === 429 || (response.status >= 500 && response.status !== 503)) retryStudyEvents(events);
+  }).catch(() => retryStudyEvents(events));
+}
+
+function retryStudyEvents(events) {
+  studyEvents.unshift(...events);
+  if (studyEvents.length >= 50) flushStudyEvents();
+  else if (!studyFlushTimer) studyFlushTimer = setTimeout(flushStudyEvents, 5_000);
+}
+
+document.addEventListener("click", (event) => {
+  const control = event.target.closest("[data-retention-event]");
+  if (!control) return;
+  const root = control.closest("[data-retention-opt-in='true']");
+  if (!root) return;
+
+  const properties = {};
+  for (const [attribute, key] of [
+    ["studyScreen", "screen"],
+    ["studyControl", "control"],
+    ["studyAction", "action"],
+    ["studyStreet", "street"],
+    ["studyDifficulty", "difficulty"],
+    ["studyResult", "result"],
+    ["studyOpponentId", "opponent_id"],
+  ]) {
+    if (control.dataset[attribute]) properties[key] = control.dataset[attribute];
+  }
+
+  studyEvents.push({ event_id: crypto.randomUUID(), event_name: control.dataset.retentionEvent, properties });
+  if (studyEvents.length >= 50) flushStudyEvents();
+  else if (!studyFlushTimer) studyFlushTimer = setTimeout(flushStudyEvents, 5_000);
+});
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") flushStudyEvents();
+});

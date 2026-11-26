@@ -27,6 +27,7 @@ defmodule Zoonk.Accounts.User do
     field :learning_goal, :string
     field :password, :string, virtual: true, redact: true
     field :sound_effects?, :boolean, default: false
+    field :retention_study_opt_in, :boolean, default: false
     field :username, :string
 
     timestamps(type: :utc_datetime_usec)
@@ -146,7 +147,7 @@ defmodule Zoonk.Accounts.User do
   @spec settings_changeset(Ecto.Schema.t(), map(), Keyword.t()) :: Ecto.Changeset.t()
   def settings_changeset(user, attrs, opts \\ []) do
     user
-    |> cast(attrs, [:avatar, :experience_level, :first_name, :last_name, :language, :learning_goal, :sound_effects?, :username])
+    |> cast(attrs, [:avatar, :experience_level, :first_name, :last_name, :language, :learning_goal, :sound_effects?, :retention_study_opt_in, :username])
     |> validate_inclusion(:experience_level, @experience_levels)
     |> validate_inclusion(:learning_goal, @learning_goals)
     |> validate_settings()

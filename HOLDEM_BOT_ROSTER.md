@@ -54,6 +54,18 @@ Use fictional chips with no conversion to money, purchases, or redemption. This 
 
 The Play selection screen reads its opponent list from `Zoonk.Poker.Opponents`. A campaign starts with 1,000 fictional chips and 0 Respect. Match entry is reserved when play starts; a win returns both entries and adds one Respect, while a loss spends the player's entry. Completed results drive Progress. Returning to the map abandons an unfinished match and refunds its entry. After refresh, the app reports that the hand cannot resume and asks the player to refund the entry; merely opening another tab no longer abandons it automatically.
 
+## Simulated bot playstyle profiles
+
+Generate one baseline per Home opponent with:
+
+```sh
+mix pokerdex.simulate_bot_profiles --hands 1000
+```
+
+The task plays full six-player hands through the Rust poker engine. Each Home bot faces the same five tight-aggressive training policies, and the generated profile is saved in `priv/poker/bot_playstyle_profiles.json`. It reports VPIP, PFR, 3-Bet percentage, C-Bet percentage, AF (post-flop bets plus raises divided by calls), and WTSD (showdowns divided by hands that saw the flop). Opportunity-based rates remain unavailable when there were no opportunities. The graph uses VPIP for its tight-to-loose axis and maps AF to a 0–100 aggression score with AF 1.0 at the midpoint; scores below 40 are passive, 40–59 balanced, and 60 or higher aggressive. The in-match profile popup shows the bot's graph and these six stats; the Progress page shows the same six stats for the learner, accumulated after each match. These samples describe the current policies in that test matchup, not GTO targets or guaranteed behavior. Regenerate the file after changing bot policy parameters, difficulty adjustments, or simulation rules.
+
+To change how a bot actually plays, update its policy assignment in `lib/poker/opponents.ex` and tune the shared policy thresholds in `lib/poker/bot/profiles.ex`. `continue` and `preflop_raise` primarily control how often it continues pre-flop. To change only the graph labels, adjust the thresholds in `lib/poker/playstyle.ex`; this changes classification without altering decisions. Regenerate the saved bot profiles after tuning policies.
+
 ## Implementation order
 
 1. Keep Teddy as the Level 0 check/call tutorial opponent.

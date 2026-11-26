@@ -103,6 +103,7 @@ defmodule ZoonkWeb do
       import ZoonkWeb.Components.Input
       import ZoonkWeb.Components.Link
       import ZoonkWeb.Components.Menu
+      import ZoonkWeb.Components.MetricInfo
       import ZoonkWeb.Components.Modal
       import ZoonkWeb.Components.Progress
       import ZoonkWeb.Components.SearchBox

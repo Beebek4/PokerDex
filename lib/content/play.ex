@@ -4,11 +4,66 @@ defmodule ZoonkWeb.Live.Play do
 
   alias Zoonk.Content.PokerHealth
   alias Zoonk.Poker.Bot.Difficulty
+  alias Zoonk.Poker.Bot.PlaystyleSimulation
   alias Zoonk.Poker.Bot.Policy
   alias Zoonk.Poker.Bot.ThinkingTime
   alias Zoonk.Poker.Campaigns
   alias Zoonk.Poker.Native
   alias Zoonk.Poker.Opponents
+  alias Zoonk.Poker.Stats
+
+  @hand_rankings [
+    %{
+      id: "royal_flush",
+      name: "Royal Flush",
+      description: "A 10, Jack, Queen, King, and Ace, all in the same suit. This is the highest possible hand."
+    },
+    %{
+      id: "straight_flush",
+      name: "Straight Flush",
+      description: "Five consecutive cards, all in the same suit. A Royal Flush is the ace-high version."
+    },
+    %{
+      id: "four_kind",
+      name: "Four of a Kind",
+      description: "Four cards of the same rank, plus one extra card called the kicker."
+    },
+    %{
+      id: "full_house",
+      name: "Full House",
+      description: "Three cards of one rank and two cards of another rank."
+    },
+    %{
+      id: "flush",
+      name: "Flush",
+      description: "Any five cards of the same suit that do not make a Straight Flush."
+    },
+    %{
+      id: "straight",
+      name: "Straight",
+      description: "Five consecutive cards of mixed suits. An Ace can be high or low, as in A-2-3-4-5."
+    },
+    %{
+      id: "three_kind",
+      name: "Three of a Kind",
+      description: "Three cards of the same rank, plus two unrelated cards."
+    },
+    %{
+      id: "two_pair",
+      name: "Two Pair",
+      description: "Two cards of one rank, two cards of another rank, and one kicker."
+    },
+    %{
+      id: "one_pair",
+      name: "One Pair",
+      description: "Two cards of the same rank, plus three unrelated cards."
+    },
+    %{
+      id: "high_card",
+      name: "High Card",
+      description: "No pair or stronger combination. The hand is ranked by its highest cards."
+    }
+  ]
 
   @impl Phoenix.LiveView
   def mount(params, _session, socket) do
@@ -49,8 +104,15 @@ defmodule ZoonkWeb.Live.Play do
       |> assign(:raise_adjusted, false)
       |> assign(:game_message, nil)
       |> assign(:game_error, nil)
+      |> assign(:win_reward, nil)
       |> assign(:hero_folded, false)
       |> assign(:action_history, [])
+      |> assign(:match_stats, nil)
+      |> assign(:hand_participants, [])
+      |> assign(:selected_bot_profile, nil)
+      |> assign(:show_hand_rankings, false)
+      |> assign(:hand_rankings, @hand_rankings)
+      |> assign(:selected_hand_ranking, nil)
       |> assign(:history_street, "Preflop")
       |> assign(:streets, [{"Preflop", "PRE"}, {"Flop", "FLOP"}, {"Turn", "TURN"}, {"River", "RIVER"}])
 
@@ -145,6 +207,48 @@ defmodule ZoonkWeb.Live.Play do
 
   def handle_event("start-match", _params, socket), do: {:noreply, socket}
 
+  def handle_event("show-bot-profile", %{"profile-id" => opponent_id}, socket) do
+    case Opponents.get(opponent_id) do
+      nil ->
+        {:noreply, socket}
+
+      opponent ->
+        simulated = PlaystyleSimulation.profile(opponent_id)
+
+        {:noreply,
+         socket
+         |> assign(:show_hand_rankings, false)
+         |> assign(:selected_bot_profile, %{opponent: opponent, simulated: simulated})}
+    end
+  end
+
+  def handle_event("close-bot-profile", _params, socket), do: {:noreply, assign(socket, :selected_bot_profile, nil)}
+
+  def handle_event("open-hand-rankings", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:selected_bot_profile, nil)
+     |> assign(:show_hand_rankings, true)
+     |> assign(:selected_hand_ranking, List.first(@hand_rankings))}
+  end
+
+  def handle_event("close-hand-rankings", _params, socket) do
+    {:noreply,
+     socket
+     |> assign(:show_hand_rankings, false)
+     |> assign(:selected_hand_ranking, nil)}
+  end
+
+  def handle_event("select-hand-ranking", %{"ranking" => ranking_id}, socket) do
+    case Enum.find(@hand_rankings, &(&1.id == ranking_id)) do
+      nil ->
+        {:noreply, socket}
+
+      ranking ->
+        {:noreply, assign(socket, :selected_hand_ranking, ranking)}
+    end
+  end
+
   def handle_event("start-tournament", _params, socket) do
     tournament = Opponents.tournament()
     location = Enum.find(socket.assigns.journey_locations, &(&1.id == "house-tournament"))
@@ -174,7 +278,11 @@ defmodule ZoonkWeb.Live.Play do
 
   def handle_event("back-to-journey", _params, socket) do
     socket = abandon_current_match(socket)
-    {:noreply, assign(socket, :play_screen, :journey)}
+    {:noreply, socket |> assign(:play_screen, :journey) |> assign(:win_reward, nil)}
+  end
+
+  def handle_event("continue-after-win", _params, socket) do
+    {:noreply, socket |> assign(:play_screen, :journey) |> assign(:win_reward, nil)}
   end
 
   def handle_event("new-hand", _params, %{assigns: %{match_over: true}} = socket) do
@@ -246,7 +354,9 @@ defmodule ZoonkWeb.Live.Play do
           |> assign(:hand_id, 0)
           |> assign(:match_start_chips, starting_stack)
           |> assign(:active_match_id, match.id)
+          |> assign(:match_stats, Stats.new_match(:heads_up))
           |> assign(:match_over, false)
+          |> assign(:win_reward, nil)
           |> deal_new_hand()
 
         {:noreply, assign(socket, :play_screen, :table)}
@@ -271,6 +381,7 @@ defmodule ZoonkWeb.Live.Play do
       |> assign(:active_match_id, nil)
       |> assign(:hand_id, 0)
       |> assign(:match_over, false)
+      |> assign(:win_reward, nil)
       |> deal_new_hand()
 
     {:noreply, assign(socket, :play_screen, :table)}
@@ -301,7 +412,9 @@ defmodule ZoonkWeb.Live.Play do
           |> assign(:bot_total_chips, starting_stack)
           |> assign(:match_start_chips, starting_stack)
           |> assign(:active_match_id, match.id)
+          |> assign(:match_stats, Stats.new_match(:tournament))
           |> assign(:match_over, false)
+          |> assign(:win_reward, nil)
           |> assign(:hand_id, 0)
           |> deal_new_hand()
 
@@ -440,13 +553,20 @@ defmodule ZoonkWeb.Live.Play do
       |> Policy.from_game_view()
       |> Policy.choose(opponent, opponent.difficulty)
 
+    decision =
+      if all_in_response?(view) and decision.action == "raise" do
+        %{decision | action: if(view.to_call > 0, do: "call", else: "check"), amount: 0.0}
+      else
+        decision
+      end
+
     mode = if socket.assigns.is_tournament, do: :tournament, else: :cash_game
-    delay = ThinkingTime.delay_ms(opponent, decision, mode)
+    delay = if all_in_response?(view), do: 0, else: ThinkingTime.delay_ms(opponent, decision, mode)
     Process.send_after(self(), {:bot_action, socket.assigns.hand_id, view, decision}, delay)
 
     socket
-    |> assign(:bot_thinking, true)
-    |> assign(:bot_thinking_name, opponent.name)
+    |> assign(:bot_thinking, delay > 0)
+    |> assign(:bot_thinking_name, if(delay > 0, do: opponent.name))
   end
 
   defp maybe_schedule_bot_action(socket, _view) do
@@ -496,6 +616,22 @@ defmodule ZoonkWeb.Live.Play do
 
   defp hide_bot_private_cards(view), do: %{view | bot_private_cards: []}
 
+  defp all_in_response?(view) do
+    active_players =
+      view.player_all_in
+      |> Enum.zip(view.player_folded)
+      |> Enum.count(fn {all_in?, folded?} -> not all_in? and not folded? end)
+
+    Enum.any?(view.player_all_in) and active_players <= 1
+  end
+
+  defp raise_available?(view) do
+    view.human_action_enabled and
+      Enum.any?(Enum.with_index(view.player_all_in), fn {all_in?, idx} ->
+        idx > 0 and not all_in? and not Enum.at(view.player_folded, idx, false)
+      end)
+  end
+
   defp starting_match_stack(%{buy_in: buy_in}), do: max(buy_in, trunc(PokerHealth.starting_chips()))
 
   defp deal_new_hand(socket) do
@@ -519,6 +655,7 @@ defmodule ZoonkWeb.Live.Play do
       )
 
     socket
+    |> assign(:hand_participants, [%{index: 0, id: "hero"}, %{index: 1, id: socket.assigns.opponent.id}])
     |> assign(:game_session, session)
     |> assign(:game_view, hide_bot_private_cards(view))
     |> assign(:action_history, blind_history(socket.assigns.opponent, dealer_idx))
@@ -539,6 +676,14 @@ defmodule ZoonkWeb.Live.Play do
     dealer_idx = socket.assigns.tournament_dealer_idx
     tournament = socket.assigns.opponent
 
+    hand_participants =
+      ([%{index: 0, id: "hero", stack: Enum.at(socket.assigns.tournament_stacks, 0, 0)}] ++
+         Enum.map(Enum.with_index(socket.assigns.tournament_players, 1), fn {opponent, index} ->
+           %{index: index, id: opponent.id, stack: Enum.at(socket.assigns.tournament_stacks, index, 0)}
+         end))
+      |> Enum.filter(&(&1.stack > 0))
+      |> Enum.map(&Map.take(&1, [:index, :id]))
+
     {session, view} =
       Native.start_tournament_hand(
         socket.assigns.tournament_stacks,
@@ -548,6 +693,7 @@ defmodule ZoonkWeb.Live.Play do
       )
 
     socket
+    |> assign(:hand_participants, hand_participants)
     |> assign(:game_session, session)
     |> assign(:game_view, hide_bot_private_cards(view))
     |> assign(:tournament_dealer_idx, view.dealer_idx)
@@ -568,6 +714,8 @@ defmodule ZoonkWeb.Live.Play do
   end
 
   defp update_battle_totals(socket, view) do
+    socket = record_completed_hand(socket, view)
+
     if socket.assigns.is_tournament do
       update_tournament_totals(socket, view)
     else
@@ -642,19 +790,40 @@ defmodule ZoonkWeb.Live.Play do
   defp finish_campaign_match(socket, won?) do
     result = if won?, do: "won", else: "lost"
 
-    case Campaigns.finish_match(socket.assigns.current_user.id, socket.assigns.active_match_id, result) do
-      {:ok, %{campaign: campaign, recovery_cash: recovery_cash}} ->
+    case Campaigns.finish_match(socket.assigns.current_user.id, socket.assigns.active_match_id, result, socket.assigns.match_stats) do
+      {:ok, %{campaign: campaign, chips_earned: chips_earned, respect_earned: respect_earned, recovery_cash: recovery_cash}} ->
         socket
         |> assign(:campaign_cash, campaign.cash)
         |> assign(:respect, campaign.respect)
         |> assign(:journey_locations, Opponents.locations(campaign.cash, campaign.respect))
         |> assign(:active_match_id, nil)
+        |> assign(:match_stats, nil)
+        |> assign(:win_reward, if(won?, do: %{chips: chips_earned, respect: respect_earned, tournament?: socket.assigns.is_tournament}))
         |> maybe_announce_recovery(recovery_cash)
 
       {:error, _reason} ->
-        socket
+        assign(socket, :game_error, "The match result could not be saved. Your match is still active; return to the map to safely refund it.")
     end
   end
+
+  defp record_completed_hand(socket, %{round: "Complete"}) do
+    if socket.assigns.active_match_id && socket.assigns.match_stats do
+      summary =
+        Stats.record_hand(
+          socket.assigns.match_stats,
+          socket.assigns.action_history,
+          socket.assigns.hand_participants,
+          socket.assigns.game_view.board,
+          socket.assigns.game_view.player_folded
+        )
+
+      assign(socket, :match_stats, summary)
+    else
+      socket
+    end
+  end
+
+  defp record_completed_hand(socket, _view), do: socket
 
   defp maybe_announce_recovery(socket, recovery_cash) when recovery_cash > 0 do
     message = "Teddy's warm-up gives you #{recovery_cash} recovery chips."
@@ -687,22 +856,36 @@ defmodule ZoonkWeb.Live.Play do
 
   defp blind_history(opponent, 0) do
     [
-      %{street: "Preflop", actor: "You", text: "Puts #{opponent.small_blind} SB"},
-      %{street: "Preflop", actor: opponent.name, text: "Puts #{opponent.big_blind} BB"}
+      %{street: "Preflop", actor: "You", actor_index: 0, action: "blind", facing_bet?: false, text: "Puts #{opponent.small_blind} SB"},
+      %{street: "Preflop", actor: opponent.name, actor_index: 1, action: "blind", facing_bet?: false, text: "Puts #{opponent.big_blind} BB"}
     ]
   end
 
   defp blind_history(opponent, _dealer_idx) do
     [
-      %{street: "Preflop", actor: opponent.name, text: "Puts #{opponent.small_blind} SB"},
-      %{street: "Preflop", actor: "You", text: "Puts #{opponent.big_blind} BB"}
+      %{street: "Preflop", actor: opponent.name, actor_index: 1, action: "blind", facing_bet?: false, text: "Puts #{opponent.small_blind} SB"},
+      %{street: "Preflop", actor: "You", actor_index: 0, action: "blind", facing_bet?: false, text: "Puts #{opponent.big_blind} BB"}
     ]
   end
 
   defp tournament_blind_history(players, view, tournament) do
     [
-      %{street: "Preflop", actor: player_name_from_tournament(players, view.small_blind_idx), text: "Puts #{chip_text(tournament.small_blind)} SB"},
-      %{street: "Preflop", actor: player_name_from_tournament(players, view.big_blind_idx), text: "Puts #{chip_text(tournament.big_blind)} BB"}
+      %{
+        street: "Preflop",
+        actor: player_name_from_tournament(players, view.small_blind_idx),
+        actor_index: view.small_blind_idx,
+        action: "blind",
+        facing_bet?: false,
+        text: "Puts #{chip_text(tournament.small_blind)} SB"
+      },
+      %{
+        street: "Preflop",
+        actor: player_name_from_tournament(players, view.big_blind_idx),
+        actor_index: view.big_blind_idx,
+        action: "blind",
+        facing_bet?: false,
+        text: "Puts #{chip_text(tournament.big_blind)} BB"
+      }
     ]
   end
 
@@ -726,7 +909,17 @@ defmodule ZoonkWeb.Live.Play do
           "Fold"
       end
 
-    history ++ [%{street: street, actor: actor, text: text}]
+    history ++
+      [
+        %{
+          street: street,
+          actor: actor,
+          actor_index: view.acting_player,
+          action: action,
+          facing_bet?: view.to_call > 0,
+          text: text
+        }
+      ]
   end
 
   defp actions_for_street(history, street) do

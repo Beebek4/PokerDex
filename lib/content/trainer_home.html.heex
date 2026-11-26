@@ -1,89 +1,132 @@
-<section class="mx-auto w-full max-w-6xl px-4 py-8 text-white sm:px-6 lg:px-8">
-  <div class="mb-8">
-    <p class="text-poker-gold text-sm font-semibold uppercase tracking-wide">PokerDex · Play</p>
-    <h1 class="mt-2 text-3xl font-bold tracking-tight text-white">Welcome back, <%= @current_user.first_name || "High roller" %></h1>
-  </div>
+<main class="mx-auto w-full max-w-6xl px-4 py-5 text-white sm:px-6 sm:py-8 lg:px-8">
+  <header class="mb-5 sm:mb-7">
+    <p class="text-poker-gold tracking-[0.2em] text-xs font-bold uppercase">PokerDex · Your Home Game</p>
+    <h1 class="mt-1 text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
+      Ready to play, <%= @current_user.first_name || "High roller" %>?
+    </h1>
+  </header>
 
   <section
-    class="border-poker-gold/30 from-[#5F4B66] to-[#2C1320] shadow-black/30 grid items-center gap-4 overflow-hidden rounded-3xl border bg-gradient-to-br p-5 text-white shadow-xl sm:p-7 lg:grid-cols-[1fr_0.8fr] lg:gap-8"
+    class="border-poker-gold/30 from-[#5F4B66] via-[#382033] to-[#17101B] shadow-black/40 relative grid items-center gap-2 overflow-hidden rounded-3xl border bg-gradient-to-br px-5 py-6 shadow-2xl sm:px-8 sm:py-8 lg:min-h-[25rem] lg:grid-cols-[1.05fr_0.95fr] lg:gap-5"
     aria-labelledby="home-play-heading"
   >
-    <div class="relative z-10">
-      <p class="text-poker-gold tracking-[0.2em] text-xs font-bold uppercase">Your table is next</p>
-      <h2 id="home-play-heading" class="mt-2 text-2xl font-extrabold tracking-tight sm:text-4xl">Play against poker bots</h2>
-      <p class="text-[#E2DCE5] mt-2 max-w-xl text-sm leading-6 sm:text-base">
-        A dedicated table for complete Hold’em hands is taking shape. Bot matches are in development; visit Play to follow the first table experience.
+    <div class="relative z-10 max-w-xl">
+      <p class="text-poker-gold tracking-[0.22em] text-xs font-extrabold uppercase">Your next hand starts here</p>
+      <h2 id="home-play-heading" class="mt-2 text-3xl font-black leading-tight tracking-tight sm:text-5xl">
+        Take your seat.<br class="hidden sm:block" /> Build your reputation.
+      </h2>
+      <p class="text-[#E2DCE5] mt-3 max-w-lg text-sm leading-6 sm:text-base">
+        Face the family one opponent at a time, collect chips and earn Respect on your way to the Garage Tournament.
       </p>
-      <div class="mt-4 flex flex-wrap items-center gap-3">
+
+      <div class="mt-5 flex flex-wrap gap-3">
         <.link
           navigate={~p"/play"}
-          class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-poker-gold px-4 py-2.5 text-sm font-bold text-[#2C1320] shadow-md shadow-black/20 transition hover:bg-poker-gold-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-poker-gold active:scale-[0.98]"
+          class="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-poker-gold px-6 py-3 text-base font-extrabold text-[#2C1320] shadow-lg shadow-black/30 transition hover:-translate-y-0.5 hover:bg-poker-gold-light focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-poker-gold active:translate-y-0"
         >
-          Explore Play <.icon name="tabler-arrow-right" class="h-4 w-4" />
+          Play now <.icon name="tabler-arrow-right" class="h-5 w-5" />
         </.link>
-        <span class="border-poker-gold/30 bg-[#2C1320]/35 text-poker-gold rounded-full border px-3 py-1.5 text-xs font-semibold">Bot table in development</span>
+        <.link
+          navigate={~p"/progress"}
+          class="border-white/20 bg-black/20 text-white inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border px-5 py-3 text-sm font-bold transition hover:border-poker-gold/50 hover:bg-black/30 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-poker-gold"
+        >
+          View progress
+        </.link>
       </div>
+
+      <dl class="mt-6 grid max-w-sm grid-cols-2 gap-3" aria-label="Your current Play balance">
+        <div class="border-white/10 bg-black/20 rounded-xl border px-4 py-3">
+          <dt class="text-[#C5BDCD] flex items-center gap-2 text-xs font-semibold uppercase tracking-wider">
+            <.icon name="tabler-coins" class="text-poker-gold h-4 w-4" /> Chips
+          </dt>
+          <dd class="mt-1 text-2xl font-black tabular-nums"><%= @campaign_cash %></dd>
+        </div>
+        <div class="border-white/10 bg-black/20 rounded-xl border px-4 py-3">
+          <dt class="text-[#C5BDCD] flex items-center gap-2 text-xs font-semibold uppercase tracking-wider">
+            <.icon name="tabler-sparkles" class="text-poker-gold h-4 w-4" /> Respect
+          </dt>
+          <dd class="mt-1 text-2xl font-black tabular-nums"><%= @respect %></dd>
+        </div>
+      </dl>
     </div>
 
-    <div class="aspect-square max-w-[23rem] relative mx-auto w-full" aria-hidden="true">
-      <img src={~p"/images/poker/tables/poker_table1.png"} alt="" class="absolute inset-0 h-full w-full object-contain" />
-      <img src={~p"/images/poker/opp_cards.png"} alt="" class="left-[16%] top-[25%] w-[18%] absolute -rotate-12 object-contain" />
-      <img src={~p"/images/poker/opp_cards.png"} alt="" class="right-[16%] top-[25%] w-[18%] absolute rotate-12 object-contain" />
-      <span class="bottom-[12%] border-poker-gold/60 bg-[#2C1320]/90 text-[10px] text-poker-gold absolute left-1/2 -translate-x-1/2 rounded-full border px-3 py-1 font-bold uppercase tracking-wide sm:text-xs">
-        You
+    <div class="aspect-[1.45/1] max-w-[34rem] relative mx-auto mt-2 w-full lg:aspect-square lg:mt-0" aria-hidden="true">
+      <div class="bg-poker-gold/10 absolute inset-0 rounded-full blur-3xl"></div>
+      <img src={~p"/images/poker/tables/poker_table1.png"} alt="" class="absolute inset-0 h-full w-full object-contain drop-shadow-2xl" />
+      <img src={~p"/images/poker/opp_cards.png"} alt="" class="left-[18%] top-[29%] w-[16%] absolute -rotate-12 object-contain drop-shadow-lg" />
+      <img src={~p"/images/poker/opp_cards.png"} alt="" class="right-[18%] top-[29%] w-[16%] absolute rotate-12 object-contain drop-shadow-lg" />
+      <img
+        src={home_character_path(@current_user)}
+        alt=""
+        class="bottom-[8%] h-[47%] max-w-[30%] absolute left-1/2 -translate-x-1/2 object-contain object-bottom drop-shadow-xl"
+      />
+      <span class="top-[8%] right-[8%] border-poker-gold/50 bg-[#2C1320]/90 text-poker-gold text-[10px] absolute rounded-full border px-3 py-1 font-extrabold uppercase tracking-wider sm:text-xs">
+        Home Heads Up
       </span>
     </div>
   </section>
 
-  <div class="mt-8 flex items-end justify-between gap-4">
-    <div>
-      <p class="text-poker-gold tracking-[0.18em] text-xs font-bold uppercase">Learning, when you want it</p>
-      <h2 class="mt-1 text-xl font-bold text-white">Continue learning</h2>
+  <section class="mt-8 sm:mt-10" aria-labelledby="home-more-heading">
+    <div class="mb-3 flex items-end justify-between gap-3">
+      <div>
+        <p class="text-[#A7ADC6] tracking-[0.16em] text-xs font-bold uppercase">When you want a change of pace</p>
+        <h2 id="home-more-heading" class="mt-1 text-xl font-bold text-white">Sharpen your game</h2>
+      </div>
     </div>
-    <.link navigate={~p"/courses"} class="hidden text-sm font-semibold text-poker-gold underline underline-offset-4 sm:block">Browse Theory</.link>
-  </div>
 
-  <section :if={@next_lesson && (@resume? || is_nil(@due_review))} class="border-white/10 bg-[#351B2B] shadow-black/20 mt-4 rounded-2xl border p-4 text-white shadow-lg sm:p-5">
-    <p class="text-poker-gold text-sm font-semibold"><%= if @resume?, do: "Pick up where you left off", else: "Your next step" %></p>
-    <h2 class="mt-2 text-2xl font-bold"><%= @next_lesson.lesson.name %></h2>
-    <p class="text-[#D8D2DF] mt-2 max-w-xl"><%= @next_lesson.lesson.description %></p>
-    <.link_button navigate={~p"/c/#{@next_lesson.course.slug}/#{@next_lesson.lesson.id}"} color={:primary} class="mt-6">
-      <%= if @resume?, do: "Continue lesson", else: "Start lesson" %>
-    </.link_button>
+    <div class="grid gap-3 sm:grid-cols-2">
+      <.link
+        navigate={~p"/practice"}
+        class="border-white/10 bg-[#351B2B] group flex items-center gap-4 rounded-2xl border p-4 transition hover:border-poker-gold/45 hover:bg-[#402438] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-poker-gold"
+      >
+        <span class="border-white/10 bg-[#5F4B66]/50 text-poker-gold flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border">
+          <.icon name="tabler-cards" class="h-6 w-6" />
+        </span>
+        <span class="min-w-0 flex-1">
+          <strong class="block text-base text-white">Puzzles</strong>
+          <span class="text-[#C5BDCD] mt-0.5 block text-sm">Read the hand and choose your move.</span>
+        </span>
+        <.icon name="tabler-arrow-right" class="text-[#A7ADC6] h-5 w-5 shrink-0 transition group-hover:translate-x-1 group-hover:text-poker-gold" />
+      </.link>
+
+      <.link
+        navigate={~p"/courses"}
+        class="border-white/10 bg-[#351B2B] group flex items-center gap-4 rounded-2xl border p-4 transition hover:border-poker-gold/45 hover:bg-[#402438] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-poker-gold"
+      >
+        <span class="border-white/10 bg-[#5F4B66]/50 text-poker-gold flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border">
+          <.icon name="tabler-book-2" class="h-6 w-6" />
+        </span>
+        <span class="min-w-0 flex-1">
+          <strong class="block text-base text-white">Theory</strong>
+          <span class="text-[#C5BDCD] mt-0.5 block text-sm">Study the ideas behind each decision.</span>
+        </span>
+        <.icon name="tabler-arrow-right" class="text-[#A7ADC6] h-5 w-5 shrink-0 transition group-hover:translate-x-1 group-hover:text-poker-gold" />
+      </.link>
+    </div>
   </section>
 
-  <section :if={@due_review && !@resume?} class="border-white/10 bg-[#351B2B] shadow-black/20 mt-4 rounded-2xl border p-4 text-white shadow-lg sm:p-5">
-    <p class="text-poker-gold text-sm font-semibold">A skill is ready for a second look</p>
-    <h2 class="mt-2 text-2xl font-bold"><%= @due_review.skill |> String.replace(".", " ") |> String.capitalize() %></h2>
-    <p class="text-[#D8D2DF] mt-2 max-w-xl"><%= @due_review.reason %></p>
-    <.link_button navigate={~p"/review/#{@due_review.course.slug}/#{@due_review.lesson.id}/#{@due_review.step.id}"} color={:primary} class="mt-6">
-      Try a different hand
-    </.link_button>
+  <section
+    :if={@next_lesson || @due_review}
+    class="border-white/10 bg-[#351B2B]/75 mt-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border px-4 py-3 sm:px-5"
+  >
+    <div class="min-w-0">
+      <p class="text-[#A7ADC6] text-xs font-semibold uppercase tracking-wider">Optional learning</p>
+      <p :if={@next_lesson} class="mt-1 truncate text-sm font-semibold text-white">
+        <%= if(@resume?, do: "Resume: ", else: "Next lesson: ") %><%= @next_lesson.lesson.name %>
+      </p>
+      <p :if={is_nil(@next_lesson) && @due_review} class="mt-1 truncate text-sm font-semibold text-white">
+        Review: <%= @due_review.skill |> String.replace(".", " ") |> String.capitalize() %>
+      </p>
+    </div>
+    <.link :if={@next_lesson} navigate={~p"/c/#{@next_lesson.course.slug}/#{@next_lesson.lesson.id}"} class="text-poker-gold text-sm font-bold underline underline-offset-4">
+      <%= if(@resume?, do: "Continue lesson", else: "Start lesson") %>
+    </.link>
+    <.link
+      :if={is_nil(@next_lesson) && @due_review}
+      navigate={~p"/review/#{@due_review.course.slug}/#{@due_review.lesson.id}/#{@due_review.step.id}"}
+      class="text-poker-gold text-sm font-bold underline underline-offset-4"
+    >
+      Try review
+    </.link>
   </section>
-
-  <section :if={is_nil(@next_lesson) && is_nil(@due_review)} class="border-white/10 bg-[#351B2B] shadow-black/20 mt-4 rounded-2xl border p-4 text-white shadow-lg sm:p-5">
-    <p class="text-poker-gold text-sm font-semibold">Your next step</p>
-    <h2 class="mt-2 text-2xl font-bold">Keep practising at your own pace</h2>
-    <p class="text-[#D8D2DF] mt-2">You’ve completed the current lessons. More reviewed practice can be added as the curriculum grows.</p>
-    <.link_button navigate={~p"/practice"} color={:primary} class="mt-6">Explore puzzles</.link_button>
-  </section>
-
-  <div class="mt-8">
-    <h2 class="text-xl font-bold text-white">Theory tracks</h2>
-    <p class="text-[#A7ADC6] mt-1 text-sm">Build your foundations with focused lessons whenever you want a break from the table.</p>
-  </div>
-
-  <div class="mt-4 grid gap-4 md:grid-cols-3">
-    <article :for={track <- @tracks} class="border-white/10 bg-[#351B2B] shadow-black/20 flex flex-col rounded-2xl border p-5 shadow-lg">
-      <div class="flex-1">
-        <h3 class="text-lg font-semibold text-white"><%= track.course.name %></h3>
-        <p class="text-[#A7ADC6] mt-2 text-sm leading-6"><%= track.course.description %></p>
-      </div>
-      <div class="text-[#A7ADC6] mt-5 flex items-center justify-between text-sm">
-        <span><%= length(track.lessons) %> short lessons</span>
-        <span><%= track.progress %>% complete</span>
-      </div>
-      <.link navigate={~p"/c/#{track.course.slug}"} class="mt-4 font-semibold text-poker-gold underline underline-offset-4">View track</.link>
-    </article>
-  </div>
-</section>
+</main>

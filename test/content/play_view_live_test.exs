@@ -332,10 +332,10 @@ defmodule ZoonkWeb.PlayViewLiveTest do
       {:ok, lv, _html} = live(conn, ~p"/c/#{course.slug}/#{lesson.id}")
 
       assert has_element?(lv, "section[aria-label='Poker scenario']")
-      assert has_element?(lv, "h2", "What should Hero do?")
-      assert has_element?(lv, "p", "Cutoff")
+      refute has_element?(lv, "h2", "What should Hero do?")
+      assert has_element?(lv, "div[role='group'][aria-label^='Hero · Cutoff ·']")
       refute has_element?(lv, "p", "No cards dealt yet")
-      assert has_element?(lv, "img[src='/images/poker/pokertable-removebg-preview.png']")
+      assert has_element?(lv, "img[src='/images/poker/tables/poker_table1.png']")
       assert has_element?(lv, "span[aria-label='Ace of spades']")
       assert has_element?(lv, "span[aria-label='King of diamonds']")
       assert has_element?(lv, "img[src='/images/poker/suits/spade.png']")
@@ -360,7 +360,7 @@ defmodule ZoonkWeb.PlayViewLiveTest do
       board_cards = Enum.map_join(question.poker_scenario["board"], ", ", &card_accessible/1)
       hero_cards = Enum.map_join(question.poker_scenario["hero"]["hole_cards"], ", ", &card_accessible/1)
 
-      assert has_element?(lv, "img[src='/images/poker/pokertable-removebg-preview.png']")
+      assert has_element?(lv, "img[src='/images/poker/tables/poker_table1.png']")
       assert has_element?(lv, "img[src='/images/poker/suits/club.png']")
       assert has_element?(lv, "span[role='img'][aria-label='#{card_accessible(Enum.at(question.poker_scenario["board"], 0))}']")
       assert has_element?(lv, "div[role='group'][aria-label='Community cards: #{board_cards}']")

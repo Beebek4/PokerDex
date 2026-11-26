@@ -39,6 +39,8 @@ defmodule Zoonk.MixProject do
   defp deps do
     [
       {:bandit, "~> 1.5.5"},
+      {:broadway, "~> 1.2"},
+      {:broadway_kafka, "~> 0.6.1"},
       {:bcrypt_elixir, "~> 3.0"},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4.3", only: [:dev, :test], runtime: false},
@@ -63,7 +65,9 @@ defmodule Zoonk.MixProject do
       {:phoenix_live_reload, "~> 1.5.1", only: :dev},
       {:phoenix_live_view, "~> 1.0.0-rc.6", override: true},
       {:phoenix, "~> 1.7.14"},
+      {:plug_cowboy, "~> 2.7"},
       {:postgrex, "~> 0.18.0"},
+      {:prom_ex, "~> 1.10.0"},
       {:req, "~> 0.5.1"},
       {:resend, "~> 0.4.2"},
       {:rustler, "== 0.38.0", runtime: false},

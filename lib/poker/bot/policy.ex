@@ -15,10 +15,17 @@ defmodule Zoonk.Poker.Bot.Policy do
     strength = hand_strength(observation)
 
     cond do
-      opponent.policy == :calling -> passive_action(observation)
-      observation.to_call > 0 and roll < difficulty.mistake_rate -> maybe_call(observation, :loose_mistake)
-      observation.to_call > 0 -> facing_bet(observation, style, difficulty, strength, roll)
-      true -> facing_check(observation, style, difficulty, strength, roll)
+      opponent.policy == :calling ->
+        passive_action(observation)
+
+      affordable_mistake_call?(observation) and roll < difficulty.mistake_rate ->
+        maybe_call(observation, :loose_mistake)
+
+      observation.to_call > 0 ->
+        facing_bet(observation, style, difficulty, strength, roll)
+
+      true ->
+        facing_check(observation, style, difficulty, strength, roll)
     end
   end
 
@@ -42,8 +49,16 @@ defmodule Zoonk.Poker.Bot.Policy do
 
   defp facing_bet(observation, style, difficulty, strength, roll) do
     price = observation.to_call / max(observation.pot + observation.to_call, 1.0)
-    call_threshold = style.continue + price * 0.22 + difficulty.call_adjustment
-    raise_threshold = max(style.value_bet + difficulty.raise_adjustment, call_threshold + 0.12)
+    stack_commitment = min(observation.to_call / max(observation.stack, 1.0), 1.0)
+    call_threshold = style.continue + price * 0.16 + stack_commitment * 0.22 + difficulty.call_adjustment
+
+    raise_threshold =
+      if observation.street == "Preflop" do
+        Map.get(style, :preflop_raise, style.value_bet)
+      else
+        max(style.value_bet + difficulty.raise_adjustment, call_threshold + 0.12)
+      end
+
     can_raise? = observation.max_raise >= observation.min_raise and observation.min_raise > observation.to_call
 
     cond do
@@ -59,7 +74,13 @@ defmodule Zoonk.Poker.Bot.Policy do
   end
 
   defp facing_check(observation, style, difficulty, strength, roll) do
-    value_threshold = max(style.value_bet + difficulty.raise_adjustment, 0.45)
+    value_threshold =
+      if observation.street == "Preflop" do
+        Map.get(style, :preflop_raise, style.value_bet)
+      else
+        max(style.value_bet + difficulty.raise_adjustment, 0.45)
+      end
+
     can_raise? = observation.max_raise >= observation.min_raise
     bluff? = strength < value_threshold and roll < style.bluff
 
@@ -77,6 +98,12 @@ defmodule Zoonk.Poker.Bot.Policy do
   defp maybe_call(%Observation{to_call: to_call}, reason) when to_call > 0, do: %Decision{action: "call", amount: 0.0, reason: reason}
 
   defp maybe_call(_observation, _reason), do: %Decision{action: "check", amount: 0.0, reason: :check_when_unpressured}
+
+  # Easy and standard bots can make occasional loose calls, but those mistakes
+  # should not turn into routine calls for most of a tournament stack.
+  defp affordable_mistake_call?(%Observation{to_call: to_call, stack: stack}) do
+    to_call > 0 and to_call <= max(stack * 0.10, 1.0)
+  end
 
   defp raise_action(observation, style, reason) do
     extra = max(1, round(observation.pot * style.size))

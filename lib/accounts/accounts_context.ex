@@ -12,6 +12,7 @@ defmodule Zoonk.Accounts do
   alias Zoonk.Mailer
   alias Zoonk.Organizations.School
   alias Zoonk.Repo
+  alias Zoonk.Retention
   alias Zoonk.Shared.Utilities
 
   @type user_changeset :: {:ok, User.t()} | {:error, Ecto.Changeset.t()}
@@ -140,7 +141,14 @@ defmodule Zoonk.Accounts do
   """
   @spec delete_user(User.t()) :: user_changeset()
   def delete_user(%User{} = user) do
-    Repo.delete(user)
+    Repo.transaction(fn ->
+      Retention.track_user_erasure(user)
+
+      case Repo.delete(user) do
+        {:ok, deleted_user} -> deleted_user
+        {:error, changeset} -> Repo.rollback(changeset)
+      end
+    end)
   end
 
   ## User registration
@@ -175,13 +183,13 @@ defmodule Zoonk.Accounts do
   """
   @spec register_guest_user(User.t(), map()) :: user_changeset()
   def register_guest_user(%User{} = user, attrs) do
-    email = attrs["email"]
-    attrs = Map.delete(attrs, "email")
-    user |> User.registration_changeset(attrs) |> Repo.update()
+    email = Map.get(attrs, "email", Map.get(attrs, :email))
+    registration_attrs = Map.drop(attrs, ["email", :email])
 
-    user
-    |> User.email_changeset(%{email: email})
-    |> Ecto.Changeset.apply_action(:update)
+    with {:ok, pending_email_user} <- apply_user_email(user, nil, %{email: email}),
+         {:ok, registered_user} <- user |> User.registration_changeset(registration_attrs) |> Repo.update() do
+      {:ok, %{registered_user | email: pending_email_user.email}}
+    end
   end
 
   @doc """
@@ -260,7 +268,20 @@ defmodule Zoonk.Accounts do
   """
   @spec update_user_settings(User.t(), map()) :: user_changeset
   def update_user_settings(%User{} = user, attrs \\ %{}) do
-    user |> User.settings_changeset(attrs) |> Repo.update()
+    changeset = User.settings_changeset(user, attrs)
+
+    if Ecto.Changeset.get_change(changeset, :retention_study_opt_in) == false and user.retention_study_opt_in do
+      Repo.transaction(fn ->
+        Retention.track_user_erasure(user)
+
+        case Repo.update(changeset) do
+          {:ok, updated_user} -> updated_user
+          {:error, changeset} -> Repo.rollback(changeset)
+        end
+      end)
+    else
+      Repo.update(changeset)
+    end
   end
 
   @doc """

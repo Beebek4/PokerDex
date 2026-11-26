@@ -5,7 +5,9 @@
         <p class="play-journey-eyebrow">THE POKERDEX MAP</p>
         <h1 id="play-journey-title">Choose your next challenge</h1>
         <p :if={@preview_all_opponents}>Visual preview mode · all opponents unlocked · match results are not saved.</p>
-        <p :if={!@preview_all_opponents}>Beat each opponent to win chips and respect. Respect unlocks new opponents.</p>
+        <p :if={!@preview_all_opponents}>
+          Beat new opponents to earn Respect. Losses keep your Respect, and repeat wins earn chips only. The Garage Tournament costs 500 chips.
+        </p>
       </div>
 
       <div :if={@unresumable_match} class="border-[#A7ADC6]/30 bg-[#2C1320]/90 rounded-2xl border p-4 text-left shadow-lg sm:p-5" role="status">
@@ -52,6 +54,10 @@
               type="button"
               phx-click="start-match"
               phx-value-opponent-id={opponent.id}
+              data-retention-event="ui.interaction"
+              data-study-screen="play"
+              data-study-control="start_match"
+              data-study-opponent-id={opponent.id}
               disabled={not is_nil(@unresumable_match)}
               aria-label={"Play #{opponent.name}"}
               class={["play-route-character-trigger", not is_nil(@unresumable_match) && "cursor-not-allowed opacity-50"]}
@@ -78,7 +84,18 @@
               />
             </div>
 
-            <article :if={opponent.status == :open} class="play-route-card is-open">
+            <button
+              :if={opponent.status == :open}
+              type="button"
+              phx-click="show-bot-profile"
+              phx-value-profile-id={opponent.id}
+              data-retention-event="opponent.profile_opened"
+              data-study-screen="play"
+              data-study-control="profile_open"
+              data-study-opponent-id={opponent.id}
+              class="play-route-card is-open w-full cursor-pointer text-left"
+              aria-label={"View #{opponent.name}'s playstyle and stats"}
+            >
               <span class="play-route-label"><%= opponent.level %></span>
               <strong><%= opponent.name %></strong>
               <span class="play-route-economy">
@@ -91,16 +108,29 @@
               <span :if={opponent.buy_in > 0} class="play-route-requirement"><%= opponent.lock_reason %></span>
               <span class="play-route-opponent"><%= opponent.personality %> · <%= opponent.style %> · <%= difficulty_label(opponent) %></span>
               <span class="play-route-preview"><%= opponent.preview %></span>
-            </article>
+              <span class="play-route-profile-cta">Opponent read <.icon name="tabler-arrow-up-right" class="h-3.5 w-3.5" /></span>
+            </button>
 
-            <article :if={opponent.status == :locked} class="play-route-card is-locked">
+            <button
+              :if={opponent.status == :locked}
+              type="button"
+              phx-click="show-bot-profile"
+              phx-value-profile-id={opponent.id}
+              data-retention-event="opponent.profile_opened"
+              data-study-screen="play"
+              data-study-control="profile_open"
+              data-study-opponent-id={opponent.id}
+              class="play-route-card is-locked w-full cursor-pointer text-left"
+              aria-label={"View #{opponent.name}'s playstyle and stats"}
+            >
               <span class="play-route-label"><%= opponent.level %></span>
               <strong><%= opponent.name %></strong>
               <span class="play-route-economy">Buy-in <%= chip_text(opponent.buy_in) %> · <%= blinds_text(opponent) %> blinds</span>
               <span class="play-route-requirement"><%= opponent.lock_reason %></span>
               <span class="play-route-opponent"><%= opponent.personality %> · <%= opponent.style %> · <%= difficulty_label(opponent) %></span>
               <span class="play-route-preview"><%= opponent.preview %></span>
-            </article>
+              <span class="play-route-profile-cta">Opponent read <.icon name="tabler-arrow-up-right" class="h-3.5 w-3.5" /></span>
+            </button>
           </div>
         </div>
 
@@ -142,7 +172,9 @@
         </article>
       </section>
 
-      <p class="play-route-footnote">Win a match to collect chips. The tournament needs 2,500 chips and 6 Respect.</p>
+      <p class="play-route-footnote">
+        Earn Respect by beating new family opponents; losses never remove it, and repeat wins earn chips only. The first Garage Tournament victory adds one Respect.
+      </p>
     </div>
   </section>
 <% else %>
@@ -160,7 +192,10 @@
         <span class="text-white/75 truncate text-sm"><%= @game_view.round %></span>
       </div>
 
-      <span class="play-chips-label"><span aria-hidden="true">◉</span> Play chips</span>
+      <button type="button" phx-click="open-hand-rankings" aria-label="Open poker hand rankings" class="play-rankings-button">
+        <.icon name="tabler-cards" class="h-4 w-4" />
+        <span>Hand Rankings</span>
+      </button>
     </header>
 
     <div class="play-table-area">
@@ -179,6 +214,24 @@
           </div>
           <span class="play-player-name">You</span>
           <span class="play-player-role"><%= role_text(@game_view, 0) %></span>
+          <div :if={!@is_tournament} class="play-health-shell" aria-label="Your chip health">
+            <progress
+              class="play-health-track"
+              max="100"
+              value={Zoonk.Content.PokerHealth.green_width(@hero_health_chips, @match_start_chips)}
+              aria-label="Your remaining chips"
+              aria-valuenow={Zoonk.Content.PokerHealth.green_width(@hero_health_chips, @match_start_chips)}
+            >
+            </progress>
+            <progress
+              :if={@hero_health_chips > @match_start_chips}
+              class="play-health-overflow"
+              max="100"
+              value={Zoonk.Content.PokerHealth.gold_width(@hero_health_chips, @match_start_chips)}
+              aria-label="Your chips above starting stack"
+            >
+            </progress>
+          </div>
           <% hero_all_in? = @game_view.round != "Complete" and Enum.at(@game_view.player_all_in, 0, false) %>
           <span :if={@game_view.hero_stack > 0} class="play-player-stack">
             <span class="play-stack-chip" aria-hidden="true"></span><%= chip_text(@game_view.hero_stack) %>
@@ -195,7 +248,12 @@
               <img src={~p"/images/poker/opp_cards.png"} alt="" class="h-full w-full object-contain" />
             </div>
             <div :if={@game_view.bot_cards != []} class="gap-[2%] grid w-full grid-cols-2" role="group" aria-label={"#{@opponent.name}'s hole cards revealed"}>
-              <.playing_card :for={card <- @game_view.bot_cards} id={"hand-#{@hand_id}-bot-card-#{card}"} card={card} highlight={card in @game_view.best_five} />
+              <.playing_card
+                :for={card <- @game_view.bot_cards}
+                id={"hand-#{@hand_id}-bot-card-#{card}"}
+                card={card}
+                highlight={card in Enum.at(@game_view.player_best_fives, 1, [])}
+              />
             </div>
           </div>
 
@@ -212,6 +270,18 @@
               highlight={card in Enum.flat_map(@game_view.player_best_fives, & &1)}
             />
           </div>
+
+          <span :if={!@is_tournament && @game_view.dealer_idx == 0} class="play-dealer-button left-[17%] top-[61%] absolute z-20" role="img" aria-label="Dealer button · You">
+            D
+          </span>
+          <span
+            :if={!@is_tournament && @game_view.dealer_idx == 1}
+            class="play-dealer-button right-[17%] top-[61%] absolute z-20"
+            role="img"
+            aria-label={"Dealer button · #{@opponent.name}"}
+          >
+            D
+          </span>
 
           <.pot_display id={"hand-#{@hand_id}-pot-#{@game_view.pot}"} amount={chip_text(@game_view.pot)} pot={@game_view.pot} initial_buy_in={@match_start_chips} />
 
@@ -252,18 +322,44 @@
         </div>
 
         <aside :if={!@is_tournament} class={["play-player-panel", "play-player-panel--opponent--#{@opponent.id}"]} aria-label={"#{@opponent.name}'s player status"}>
-          <div
+          <button
+            type="button"
+            phx-click="show-bot-profile"
+            phx-value-profile-id={@opponent.id}
+            aria-label={"View #{@opponent.name}'s playstyle"}
+            title={"View #{@opponent.name}'s playstyle"}
+            data-retention-event="opponent.profile_opened"
+            data-study-screen="play"
+            data-study-control="profile_open"
+            data-study-opponent-id={@opponent.id}
             class={[
-              "play-avatar play-avatar--character play-avatar--opponent",
+              "play-avatar play-avatar--character play-avatar--opponent play-opponent-image-trigger",
               "play-avatar--opponent--#{@opponent.id}",
               game_flipped_character?(@opponent.id) && "play-avatar--opponent--flipped"
             ]}
-            aria-hidden="true"
           >
             <img src={character_image_path(@opponent.id)} alt="" />
-          </div>
+          </button>
           <span class="play-player-name"><%= @opponent.name %></span>
           <span class="play-player-role"><%= role_text(@game_view, 1) %></span>
+          <div class="play-health-shell" aria-label={"#{@opponent.name} chip health"}>
+            <progress
+              class="play-health-track"
+              max="100"
+              value={Zoonk.Content.PokerHealth.green_width(@bot_health_chips, @match_start_chips)}
+              aria-label="Opponent remaining chips"
+              aria-valuenow={Zoonk.Content.PokerHealth.green_width(@bot_health_chips, @match_start_chips)}
+            >
+            </progress>
+            <progress
+              :if={@bot_health_chips > @match_start_chips}
+              class="play-health-overflow"
+              max="100"
+              value={Zoonk.Content.PokerHealth.gold_width(@bot_health_chips, @match_start_chips)}
+              aria-label="Opponent chips above starting stack"
+            >
+            </progress>
+          </div>
           <% opponent_stack = Enum.at(@game_view.player_stacks, 1, @game_view.bot_stack) %>
           <% opponent_all_in? = @game_view.round != "Complete" and Enum.at(@game_view.player_all_in, 1, false) %>
           <span :if={opponent_stack > 0} class="play-player-stack">
@@ -291,7 +387,20 @@
           <% seat_idx = tournament_player_index(@tournament_players, seat.opponent.id) %>
           <% seat_stack = Enum.at(@game_view.player_stacks, seat_idx, 0) %>
           <% seat_all_in? = @game_view.round != "Complete" and Enum.at(@game_view.player_all_in, seat_idx, false) %>
-          <img src={character_image_path(seat.opponent.id)} alt="" />
+          <button
+            type="button"
+            phx-click="show-bot-profile"
+            phx-value-profile-id={seat.opponent.id}
+            aria-label={"View #{seat.opponent.name}'s playstyle"}
+            title={"View #{seat.opponent.name}'s playstyle"}
+            data-retention-event="opponent.profile_opened"
+            data-study-screen="play"
+            data-study-control="profile_open"
+            data-study-opponent-id={seat.opponent.id}
+            class="play-tournament-avatar-button"
+          >
+            <img src={character_image_path(seat.opponent.id)} alt="" />
+          </button>
           <strong><%= seat.opponent.name %></strong>
           <span class="play-tournament-seat-role"><%= role_text(@game_view, seat_idx) %></span>
           <span :if={seat_stack > 0} class="play-player-stack">
@@ -343,6 +452,11 @@
           type="button"
           phx-click="player-action"
           phx-value-action="fold"
+          data-retention-event="ui.interaction"
+          data-study-screen="play"
+          data-study-control="player_action"
+          data-study-action="fold"
+          data-study-street={String.downcase(@game_view.round)}
           class="border-white/15 bg-[#2C1320] min-h-11 rounded-xl border px-3 text-sm font-bold text-white transition hover:bg-[#4A263C] focus-visible:outline-poker-gold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-[0.98]"
         >
           Fold
@@ -355,6 +469,11 @@
           form={if @raise_adjusted, do: "raise-form", else: nil}
           phx-click={if @raise_adjusted, do: nil, else: "player-action"}
           phx-value-action={if @game_view.to_call > 0, do: "call", else: "check"}
+          data-retention-event="ui.interaction"
+          data-study-screen="play"
+          data-study-control="player_action"
+          data-study-action={if @game_view.to_call > 0, do: "call", else: "check"}
+          data-study-street={String.downcase(@game_view.round)}
           class="bg-poker-gold text-[#2C1320] min-h-11 shadow-black/20 rounded-xl px-3 text-sm font-extrabold shadow-md transition hover:bg-poker-gold-light focus-visible:outline-poker-gold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-[0.98]"
         >
           <%= cond do %>
@@ -370,7 +489,7 @@
         </button>
 
         <form
-          :if={@game_view.human_action_enabled && @game_view.min_raise <= @game_view.max_raise}
+          :if={raise_available?(@game_view) && @game_view.min_raise <= @game_view.max_raise}
           id="raise-form"
           phx-change="set-raise-size"
           phx-submit="raise"
@@ -382,6 +501,11 @@
               type="button"
               phx-click="player-action"
               phx-value-action={if @game_view.to_call > 0, do: "call", else: "check"}
+              data-retention-event="ui.interaction"
+              data-study-screen="play"
+              data-study-control="player_action"
+              data-study-action={if @game_view.to_call > 0, do: "call", else: "check"}
+              data-study-street={String.downcase(@game_view.round)}
               aria-label={if @game_view.to_call > 0, do: "Call instead of raising", else: "Check instead of betting"}
               class="border-[#A7ADC6]/30 bg-[#5F4B66] min-h-11 text-[#F2F1F6] w-full whitespace-nowrap rounded-lg border px-2 text-xs font-bold transition hover:bg-[#735C79] focus-visible:outline-poker-gold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-[0.98]"
             >
@@ -390,6 +514,10 @@
             <button
               type="button"
               phx-click="raise-ten-percent"
+              data-retention-event="ui.interaction"
+              data-study-screen="play"
+              data-study-control="raise_more"
+              data-study-street={String.downcase(@game_view.round)}
               title="Add 10% of your remaining stack to the selected amount"
               class="border-[#A7ADC6]/30 bg-[#5F4B66] min-h-11 min-w-14 text-[#F2F1F6] col-start-2 w-full whitespace-nowrap rounded-lg border px-2 text-xs font-extrabold transition hover:bg-[#735C79] focus-visible:outline-poker-gold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-[0.98]"
               aria-label="Increase selected bet by 10 percent of your remaining stack"
@@ -432,3 +560,222 @@
     </div>
   </section>
 <% end %>
+
+<div :if={@win_reward} class="z-[120] bg-black/75 fixed inset-0 flex items-center justify-center p-4" role="presentation">
+  <section
+    class="border-poker-gold/50 bg-[#2C1320] shadow-black/50 relative w-full max-w-sm overflow-hidden rounded-3xl border p-6 text-center text-white shadow-2xl"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="match-victory-title"
+    aria-describedby="match-victory-description"
+  >
+    <div class="from-poker-gold/20 pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b to-transparent" aria-hidden="true"></div>
+    <div class="relative">
+      <span class="border-poker-gold/40 bg-poker-gold/10 text-poker-gold mx-auto flex h-14 w-14 items-center justify-center rounded-full border text-3xl" aria-hidden="true">
+        ♛
+      </span>
+      <p class="text-poker-gold tracking-[0.2em] mt-4 text-xs font-extrabold uppercase">Victory</p>
+      <h2 id="match-victory-title" class="mt-1 text-3xl font-black"><%= if @win_reward.tournament?, do: "Tournament won!", else: "Match won!" %></h2>
+      <p id="match-victory-description" class="text-[#D3CDDA] mt-2 text-sm">
+        <%= if @win_reward.tournament?, do: "You conquered the family field and earned:", else: "You defeated #{@opponent.name} and earned:" %>
+      </p>
+
+      <div class="mt-6 grid grid-cols-2 gap-3">
+        <div class="border-poker-gold/25 bg-poker-gold/10 rounded-2xl border px-3 py-4">
+          <span class="text-poker-gold mx-auto flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-wider">
+            <span class="play-stack-chip" aria-hidden="true"></span> Chips
+          </span>
+          <strong class="mt-2 block text-2xl font-black text-white">+<%= chip_text(@win_reward.chips) %></strong>
+        </div>
+        <div class="border-white/10 bg-white/5 rounded-2xl border px-3 py-4">
+          <span class="text-[#D3CDDA] text-xs font-bold uppercase tracking-wider">Respect</span>
+          <strong class="mt-2 block text-2xl font-black text-white">+<%= @win_reward.respect %></strong>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        phx-click="continue-after-win"
+        class="bg-poker-gold text-[#2C1320] min-h-12 shadow-black/20 mt-6 w-full rounded-xl px-5 text-sm font-extrabold shadow-lg transition hover:bg-poker-gold-light focus-visible:outline-poker-gold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 active:scale-[0.98]"
+      >
+        Continue to map <.icon name="tabler-arrow-right" class="ml-1 inline h-4 w-4" />
+      </button>
+    </div>
+  </section>
+</div>
+
+<div :if={@selected_bot_profile} class="z-[100] bg-black/70 fixed inset-0 flex items-center justify-center overflow-y-auto p-4">
+  <button type="button" phx-click="close-bot-profile" aria-label="Close opponent read" class="absolute inset-0 h-full w-full cursor-default"></button>
+  <section
+    class="border-[#8797AF]/50 bg-[#2C1320] max-h-[calc(100dvh-2rem)] relative z-10 w-full max-w-md overflow-y-auto rounded-2xl border p-5 text-white shadow-2xl"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="opponent-read-title"
+  >
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <p class="text-poker-gold text-xs font-bold uppercase tracking-widest">Bot playstyle</p>
+        <h2 id="opponent-read-title" class="mt-1 text-2xl font-bold"><%= @selected_bot_profile.opponent.name %></h2>
+      </div>
+      <button type="button" phx-click="close-bot-profile" aria-label="Close opponent read" class="text-[#A7ADC6] rounded-lg px-3 py-2 hover:bg-white/10">✕</button>
+    </div>
+    <section :if={@selected_bot_profile.simulated} class="border-white/10 bg-white/5 mt-4 rounded-xl border p-4">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <p class="text-[#A7ADC6] text-xs font-semibold uppercase tracking-wider">Playstyle</p>
+          <p class="mt-1 text-lg font-bold text-white"><%= @selected_bot_profile.simulated["style_title"] %></p>
+        </div>
+      </div>
+      <svg
+        viewBox="0 0 240 200"
+        class="max-w-[240px] mx-auto mt-2 h-40 w-full"
+        role="img"
+        aria-label={"#{@selected_bot_profile.simulated["style_title"]} playstyle. Tight to loose #{@selected_bot_profile.simulated["vpip_percentage"]} percent; passive to aggressive #{@selected_bot_profile.simulated["aggression_percentage"]} percent."}
+      >
+        <defs>
+          <linearGradient id="bot-tight-gradient" gradientUnits="userSpaceOnUse" x1="55" y1="0" x2="120" y2="0">
+            <stop offset="0%" stop-color="#E89A3A" stop-opacity=".28" /><stop offset="100%" stop-color="#E89A3A" stop-opacity="0" />
+          </linearGradient>
+          <linearGradient id="bot-loose-gradient" gradientUnits="userSpaceOnUse" x1="120" y1="0" x2="185" y2="0">
+            <stop offset="0%" stop-color="#56BD78" stop-opacity="0" /><stop offset="100%" stop-color="#56BD78" stop-opacity=".28" />
+          </linearGradient>
+          <linearGradient id="bot-aggressive-gradient" gradientUnits="userSpaceOnUse" x1="0" y1="35" x2="0" y2="100">
+            <stop offset="0%" stop-color="#E45B5B" stop-opacity=".3" /><stop offset="100%" stop-color="#E45B5B" stop-opacity="0" />
+          </linearGradient>
+          <linearGradient id="bot-passive-gradient" gradientUnits="userSpaceOnUse" x1="0" y1="100" x2="0" y2="165">
+            <stop offset="0%" stop-color="#579CE0" stop-opacity="0" /><stop offset="100%" stop-color="#579CE0" stop-opacity=".3" />
+          </linearGradient>
+        </defs>
+        <rect x="55" y="35" width="65" height="130" fill="url(#bot-tight-gradient)" />
+        <rect x="120" y="35" width="65" height="130" fill="url(#bot-loose-gradient)" />
+        <rect x="55" y="35" width="130" height="65" fill="url(#bot-aggressive-gradient)" />
+        <rect x="55" y="100" width="130" height="65" fill="url(#bot-passive-gradient)" />
+        <rect x="55" y="35" width="130" height="130" fill="none" stroke="#8797AF" stroke-opacity=".55" />
+        <line x1="120" y1="35" x2="120" y2="165" stroke="#8797AF" stroke-opacity=".4" />
+        <line x1="55" y1="100" x2="185" y2="100" stroke="#8797AF" stroke-opacity=".4" />
+        <circle
+          cx={55 + 1.3 * @selected_bot_profile.simulated["vpip_percentage"]}
+          cy={165 - 1.3 * @selected_bot_profile.simulated["aggression_percentage"]}
+          r="7"
+          fill={@selected_bot_profile.simulated["graph_color"]}
+          stroke="#2C1320"
+          stroke-width="2"
+        />
+        <text x="120" y="22" text-anchor="middle" fill="#F08080" font-size="10" font-weight="600">Aggressive</text>
+        <text x="120" y="184" text-anchor="middle" fill="#78B7F0" font-size="10" font-weight="600">Passive</text>
+        <text x="47" y="103" text-anchor="end" fill="#F0B05D" font-size="10" font-weight="600">Tight</text>
+        <text x="193" y="103" text-anchor="start" fill="#79D296" font-size="10" font-weight="600">Loose</text>
+      </svg>
+      <div class="mt-2 space-y-3">
+        <section>
+          <h3 class="text-[#A7ADC6] text-xs font-bold uppercase tracking-wider">Pre-flop</h3>
+          <dl class="mt-2 grid grid-cols-3 gap-2 text-sm">
+            <div class="bg-black/20 rounded-lg p-3">
+              <dt class="text-[#A7ADC6] flex items-center gap-1">
+                VPIP
+                <.metric_info label="VPIP" description="The percentage of dealt hands where this bot voluntarily calls or raises before the flop. Forced blinds are excluded." />
+              </dt>
+              <dd class="mt-1 text-lg font-bold"><%= @selected_bot_profile.simulated["vpip_percentage"] %>%</dd>
+            </div>
+            <div class="bg-black/20 rounded-lg p-3">
+              <dt class="text-[#A7ADC6] flex items-center gap-1">
+                PFR <.metric_info label="PFR" description="The percentage of dealt hands where this bot raises before the flop." />
+              </dt>
+              <dd class="mt-1 text-lg font-bold"><%= @selected_bot_profile.simulated["pfr_percentage"] %>%</dd>
+            </div>
+            <div class="bg-black/20 rounded-lg p-3">
+              <dt class="text-[#A7ADC6] flex items-center gap-1">
+                3-Bet <.metric_info label="3-Bet" description="How often this bot re-raises after facing a pre-flop raise, out of those opportunities." align={:end} />
+              </dt>
+              <dd class="mt-1 text-lg font-bold">
+                <%= if is_nil(@selected_bot_profile.simulated["three_bet_percentage"]), do: "—", else: "#{@selected_bot_profile.simulated["three_bet_percentage"]}%" %>
+              </dd>
+            </div>
+          </dl>
+        </section>
+        <section>
+          <h3 class="text-[#A7ADC6] text-xs font-bold uppercase tracking-wider">Post-flop</h3>
+          <dl class="mt-2 grid grid-cols-3 gap-2 text-sm">
+            <div class="bg-black/20 rounded-lg p-3">
+              <dt class="text-[#A7ADC6] flex items-center gap-1">
+                C-Bet
+                <.metric_info
+                  label="C-Bet"
+                  description="How often this bot bets the flop when it was the last pre-flop raiser and could act without facing a bet."
+                  placement={:above}
+                />
+              </dt>
+              <dd class="mt-1 text-lg font-bold">
+                <%= if is_nil(@selected_bot_profile.simulated["cbet_percentage"]), do: "—", else: "#{@selected_bot_profile.simulated["cbet_percentage"]}%" %>
+              </dd>
+            </div>
+            <div class="bg-black/20 rounded-lg p-3">
+              <dt class="text-[#A7ADC6] flex items-center gap-1">
+                AF <.metric_info label="AF" description="Post-flop bets and raises divided by post-flop calls. This is a ratio, not a percentage." placement={:above} />
+              </dt>
+              <dd class="mt-1 text-lg font-bold"><%= @selected_bot_profile.simulated["aggression_factor"] || "—" %></dd>
+            </div>
+            <div class="bg-black/20 rounded-lg p-3">
+              <dt class="text-[#A7ADC6] flex items-center gap-1">
+                WTSD <.metric_info label="WTSD" description="The percentage of hands where this bot saw the flop and then reached showdown." align={:end} placement={:above} />
+              </dt>
+              <dd class="mt-1 text-lg font-bold">
+                <%= if is_nil(@selected_bot_profile.simulated["wtsd_percentage"]), do: "—", else: "#{@selected_bot_profile.simulated["wtsd_percentage"]}%" %>
+              </dd>
+            </div>
+          </dl>
+        </section>
+      </div>
+    </section>
+
+    <p :if={!@selected_bot_profile.simulated} class="border-white/10 bg-white/5 text-[#A7ADC6] mt-4 rounded-xl border p-3 text-sm">
+      Playstyle data is unavailable. Generate it with <code>mix pokerdex.simulate_bot_profiles --hands 1000</code>.
+    </p>
+  </section>
+</div>
+
+<div :if={@show_hand_rankings} class="z-[100] bg-black/70 fixed inset-0 flex items-center justify-center overflow-y-auto p-4">
+  <button type="button" phx-click="close-hand-rankings" aria-label="Close hand rankings" class="absolute inset-0 h-full w-full cursor-default"></button>
+  <section
+    class="border-[#8797AF]/50 bg-[#2C1320] max-h-[calc(100dvh-2rem)] relative z-10 w-full max-w-lg overflow-y-auto rounded-2xl border p-5 text-white shadow-2xl"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="hand-rankings-title"
+    phx-window-keydown="close-hand-rankings"
+    phx-key="escape"
+  >
+    <header class="flex items-start justify-between gap-3">
+      <div>
+        <p class="text-poker-gold text-xs font-bold uppercase tracking-widest">Texas Hold’em</p>
+        <h2 id="hand-rankings-title" class="mt-1 text-2xl font-bold">Hand Rankings</h2>
+        <p class="text-[#A7ADC6] mt-1 text-sm">Strongest to weakest · tap a hand to learn more</p>
+      </div>
+      <button type="button" phx-click="close-hand-rankings" aria-label="Close hand rankings" class="text-[#A7ADC6] rounded-lg px-3 py-2 hover:bg-white/10">✕</button>
+    </header>
+
+    <ol class="mt-4 grid grid-cols-2 gap-2">
+      <li :for={{ranking, index} <- Enum.with_index(@hand_rankings, 1)}>
+        <button
+          type="button"
+          phx-click="select-hand-ranking"
+          phx-value-ranking={ranking.id}
+          aria-pressed={@selected_hand_ranking.id == ranking.id}
+          class={[
+            "border-white/10 bg-white/5 min-h-12 flex w-full items-center gap-2 rounded-xl border px-3 py-2 text-left text-sm font-semibold transition",
+            @selected_hand_ranking.id == ranking.id && "border-poker-gold/70 bg-poker-gold/15 text-poker-gold",
+            @selected_hand_ranking.id != ranking.id && "text-white hover:border-poker-gold/50 hover:bg-white/10"
+          ]}
+        >
+          <span class="text-[#A7ADC6] w-5 shrink-0 text-xs"><%= index %></span>
+          <span><%= ranking.name %></span>
+        </button>
+      </li>
+    </ol>
+
+    <section class="border-poker-gold/30 bg-black/20 mt-4 rounded-xl border p-4" aria-live="polite">
+      <p class="text-poker-gold text-xs font-bold uppercase tracking-wider">#<%= Enum.find_index(@hand_rankings, &(&1.id == @selected_hand_ranking.id)) + 1 %></p>
+      <h3 class="mt-1 text-lg font-bold"><%= @selected_hand_ranking.name %></h3>
+      <p class="text-[#D3CDDA] mt-2 text-sm leading-relaxed"><%= @selected_hand_ranking.description %></p>
+    </section>
+  </section>
+</div>

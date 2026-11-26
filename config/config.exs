@@ -7,7 +7,6 @@
 # General application configuration
 import Config
 
-# Configure esbuild (the version is required)
 config :esbuild,
   version: "0.21.5",
   default: [
@@ -16,15 +15,12 @@ config :esbuild,
     env: %{"NODE_PATH" => Path.expand("../deps", __DIR__)}
   ]
 
-# Configures Elixir's Logger
 config :logger, :console,
   format: "$time $metadata[$level] $message\n",
   metadata: [:request_id]
 
-# Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
-# Configure tailwind (the version is required)
 config :tailwind,
   version: "3.4.4",
   default: [
@@ -33,36 +29,27 @@ config :tailwind,
       --input=css/app.css
       --output=../priv/static/assets/app.css
     ),
+
+    # Configure esbuild (the version is required)
     cd: Path.expand("../assets", __DIR__)
   ]
 
-# Oban config
 config :zoonk, Oban,
   engine: Oban.Engines.Basic,
   repo: Zoonk.Repo,
   queues: [default: 10],
   shutdown_grace_period: :timer.seconds(60),
   plugins: [
-    # Delete jobs after 7 days
     {Oban.Plugins.Pruner, max_age: 60 * 60 * 24 * 7},
-    # Automatically move failed jobs back to available so they can run again
     {Oban.Plugins.Lifeline, rescue_after: :timer.minutes(30)}
   ]
 
-# Configures the mailer
-#
-# By default it uses the "Local" adapter which stores the emails
-# locally. You can see the emails in your browser, at "/dev/mailbox".
-#
-# For production it's recommended to configure a different adapter
-# at the `config/runtime.exs`.
 config :zoonk, Zoonk.Mailer, adapter: Swoosh.Adapters.Local
 
 config :zoonk, Zoonk.Poker.Native,
   crate: :poker_native,
   path: "native/poker_native"
 
-# Configures the endpoint
 config :zoonk, ZoonkWeb.Endpoint,
   url: [host: "localhost"],
   adapter: Bandit.PhoenixAdapter,
@@ -73,8 +60,31 @@ config :zoonk, ZoonkWeb.Endpoint,
   pubsub_server: Zoonk.PubSub,
   live_view: [signing_salt: "18a5Hr6d"]
 
-# Configure translation
 config :zoonk, ZoonkWeb.Gettext, default_locale: "en", locales: ~w(de en pt zh_TW)
+config :zoonk, :app_env, config_env()
+config :zoonk, :app_env, config_env()
+
+# Configures Elixir's Logger
+
+# Use Jason for JSON parsing in Phoenix
+
+# Configure tailwind (the version is required)
+
+# Oban config
+# Delete jobs after 7 days
+# Automatically move failed jobs back to available so they can run again
+
+# Configures the mailer
+#
+# By default it uses the "Local" adapter which stores the emails
+# locally. You can see the emails in your browser, at "/dev/mailbox".
+#
+# For production it's recommended to configure a different adapter
+# at the `config/runtime.exs`.
+
+# Configures the endpoint
+
+# Configure translation
 
 # Content security policy
 config :zoonk, :csp, connect_src: System.get_env("CSP_CONNECT_SRC")
