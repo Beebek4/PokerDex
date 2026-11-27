@@ -5,6 +5,21 @@ cd -P -- "$(dirname -- "$0")"
 
 # Render's free plan has no separate pre-deploy command, so apply schema
 # updates and safe public curriculum data before starting the web server.
-./zoonk eval 'Zoonk.Release.migrate()'
+# Neon may briefly be unavailable while its serverless compute resumes. Retry
+# migration startup a few times; Ecto records each successful migration, so a
+# retry safely skips any migration that already completed.
+migration_attempt=1
+until ./zoonk eval 'Zoonk.Release.migrate()'; do
+  if [ "$migration_attempt" -ge 4 ]; then
+    echo "Database migrations failed after 4 attempts." >&2
+    exit 1
+  fi
+
+  retry_delay=$((migration_attempt * 5))
+  echo "Database migration attempt $migration_attempt failed; retrying in ${retry_delay}s." >&2
+  sleep "$retry_delay"
+  migration_attempt=$((migration_attempt + 1))
+done
+
 ./zoonk eval 'Zoonk.Release.seed()'
 PHX_SERVER=true exec ./zoonk start
