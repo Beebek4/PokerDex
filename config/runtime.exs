@@ -139,7 +139,7 @@ if config_env() == :prod do
         auth_token: metrics_token
       ]
   else
-    config :zoonk, Zoonk.PromEx, metrics_server: []
+    config :zoonk, Zoonk.PromEx, metrics_server: :disabled
   end
 
   ## Configuring the mailer

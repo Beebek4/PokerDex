@@ -11,7 +11,15 @@ defmodule Zoonk.Poker.Bot.PlaystyleSimulationTest do
     assert profile["hands_simulated"] == 20
     assert profile["hands_seen"] == 20
     assert profile["training_opponent"] == "five tight-aggressive opponents at a six-player table"
-    assert profile["style_title"] in ["Tight-Aggressive", "Loose-Aggressive", "Tight-Passive", "Loose-Passive"]
+
+    assert profile["style_title"] in [
+             "Tight-Aggressive (TAG)",
+             "Loose-Aggressive (LAG)",
+             "Tight-Passive",
+             "Loose-Passive",
+             "Tight-Balanced",
+             "Loose-Balanced"
+           ]
 
     for key <- ~w(vpip_percentage pfr_percentage aggression_percentage call_percentage fold_to_bet_percentage showdown_percentage) do
       assert profile[key] in 0..100
