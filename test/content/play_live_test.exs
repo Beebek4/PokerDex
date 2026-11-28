@@ -44,6 +44,7 @@ defmodule ZoonkWeb.PlayLiveTest do
     lv |> element(~s|button[phx-value-opponent-id="teddy"]|) |> render_click()
 
     assert has_element?(lv, "h1", "Heads-up table")
+    assert has_element?(lv, "span[aria-label='Current blinds']", "1/2")
     assert has_element?(lv, "button", "Call 1")
     assert has_element?(lv, "button", "Fold")
     assert has_element?(lv, "input#raise-to")

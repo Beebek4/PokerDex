@@ -190,6 +190,10 @@
         <span class="font-semibold tracking-tight"><%= @opponent.name %></span>
         <span class="text-white/50">·</span>
         <span class="text-white/75 truncate text-sm"><%= @game_view.round %></span>
+        <% current_blinds = if @is_tournament, do: @tournament_blinds, else: @heads_up_blinds %>
+        <span class="border-poker-gold/30 bg-black/25 text-poker-gold rounded-full border px-2 py-1 text-xs font-semibold" aria-label="Current blinds">
+          <%= chip_text(elem(current_blinds, 0)) %>/<%= chip_text(elem(current_blinds, 1)) %>
+        </span>
       </div>
 
       <button type="button" phx-click="open-hand-rankings" aria-label="Open poker hand rankings" class="play-rankings-button">

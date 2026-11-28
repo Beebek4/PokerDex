@@ -3,6 +3,7 @@ defmodule ZoonkWeb.Live.Play do
   use ZoonkWeb, :live_view
 
   alias Zoonk.Content.PokerHealth
+  alias Zoonk.Poker.BlindSchedule
   alias Zoonk.Poker.Bot.Difficulty
   alias Zoonk.Poker.Bot.PlaystyleSimulation
   alias Zoonk.Poker.Bot.Policy
@@ -79,6 +80,14 @@ defmodule ZoonkWeb.Live.Play do
       |> assign(:tournament_players, [])
       |> assign(:tournament_stacks, [])
       |> assign(:tournament_dealer_idx, 0)
+      |> assign(:tournament_blind_level, 0)
+      |> assign(:tournament_level_start_hand, 0)
+      |> assign(:tournament_alive_count, 0)
+      |> assign(:tournament_blinds, BlindSchedule.tournament_at(0))
+      |> assign(:heads_up_blind_level, 0)
+      |> assign(:heads_up_level_start_hand, 0)
+      |> assign(:heads_up_starting_blinds, {1, 2})
+      |> assign(:heads_up_blinds, {1, 2})
       |> assign(:is_tournament, false)
       |> assign(:campaign_cash, campaign.cash)
       |> assign(:respect, campaign.respect)
@@ -355,6 +364,10 @@ defmodule ZoonkWeb.Live.Play do
           |> assign(:match_start_chips, starting_stack)
           |> assign(:active_match_id, match.id)
           |> assign(:match_stats, Stats.new_match(:heads_up))
+          |> assign(:heads_up_blind_level, 0)
+          |> assign(:heads_up_level_start_hand, 0)
+          |> assign(:heads_up_starting_blinds, {opponent.small_blind, opponent.big_blind})
+          |> assign(:heads_up_blinds, {opponent.small_blind, opponent.big_blind})
           |> assign(:match_over, false)
           |> assign(:win_reward, nil)
           |> deal_new_hand()
@@ -380,6 +393,10 @@ defmodule ZoonkWeb.Live.Play do
       |> assign(:match_start_chips, starting_stack)
       |> assign(:active_match_id, nil)
       |> assign(:hand_id, 0)
+      |> assign(:heads_up_blind_level, 0)
+      |> assign(:heads_up_level_start_hand, 0)
+      |> assign(:heads_up_starting_blinds, {opponent.small_blind, opponent.big_blind})
+      |> assign(:heads_up_blinds, {opponent.small_blind, opponent.big_blind})
       |> assign(:match_over, false)
       |> assign(:win_reward, nil)
       |> deal_new_hand()
@@ -404,6 +421,10 @@ defmodule ZoonkWeb.Live.Play do
           |> assign(:tournament_players, players)
           |> assign(:tournament_stacks, stacks)
           |> assign(:tournament_dealer_idx, 0)
+          |> assign(:tournament_blind_level, 0)
+          |> assign(:tournament_level_start_hand, 0)
+          |> assign(:tournament_alive_count, length(stacks))
+          |> assign(:tournament_blinds, BlindSchedule.tournament_at(0))
           |> assign(:difficulty, tournament.difficulty)
           |> assign(:campaign_cash, campaign.cash)
           |> assign(:respect, campaign.respect)
@@ -439,6 +460,10 @@ defmodule ZoonkWeb.Live.Play do
       |> assign(:tournament_players, players)
       |> assign(:tournament_stacks, List.duplicate(starting_stack, length(players) + 1))
       |> assign(:tournament_dealer_idx, 0)
+      |> assign(:tournament_blind_level, 0)
+      |> assign(:tournament_level_start_hand, 0)
+      |> assign(:tournament_alive_count, length(players) + 1)
+      |> assign(:tournament_blinds, BlindSchedule.tournament_at(0))
       |> assign(:difficulty, tournament.difficulty)
       |> assign(:hero_total_chips, starting_stack)
       |> assign(:bot_total_chips, starting_stack)
@@ -645,12 +670,15 @@ defmodule ZoonkWeb.Live.Play do
   defp deal_heads_up_hand(socket) do
     dealer_idx = rem(socket.assigns.hand_id, 2)
 
+    {small_blind, big_blind} =
+      BlindSchedule.heads_up_at(socket.assigns.heads_up_blind_level, socket.assigns.heads_up_starting_blinds)
+
     {session, view} =
       Native.start_play_hand_with_button(
         socket.assigns.hero_total_chips,
         socket.assigns.bot_total_chips,
-        socket.assigns.opponent.small_blind * 1.0,
-        socket.assigns.opponent.big_blind * 1.0,
+        small_blind * 1.0,
+        big_blind * 1.0,
         dealer_idx
       )
 
@@ -658,7 +686,8 @@ defmodule ZoonkWeb.Live.Play do
     |> assign(:hand_participants, [%{index: 0, id: "hero"}, %{index: 1, id: socket.assigns.opponent.id}])
     |> assign(:game_session, session)
     |> assign(:game_view, hide_bot_private_cards(view))
-    |> assign(:action_history, blind_history(socket.assigns.opponent, dealer_idx))
+    |> assign(:heads_up_blinds, {small_blind, big_blind})
+    |> assign(:action_history, blind_history(socket.assigns.opponent, dealer_idx, small_blind, big_blind))
     |> assign(:history_street, "Preflop")
     |> assign(:hero_health_chips, view.hero_stack)
     |> assign(:bot_health_chips, view.bot_stack)
@@ -674,7 +703,7 @@ defmodule ZoonkWeb.Live.Play do
 
   defp deal_tournament_hand(socket) do
     dealer_idx = socket.assigns.tournament_dealer_idx
-    tournament = socket.assigns.opponent
+    {small_blind, big_blind} = BlindSchedule.tournament_at(socket.assigns.tournament_blind_level)
 
     hand_participants =
       ([%{index: 0, id: "hero", stack: Enum.at(socket.assigns.tournament_stacks, 0, 0)}] ++
@@ -688,8 +717,8 @@ defmodule ZoonkWeb.Live.Play do
       Native.start_tournament_hand(
         socket.assigns.tournament_stacks,
         dealer_idx,
-        tournament.small_blind * 1.0,
-        tournament.big_blind * 1.0
+        small_blind * 1.0,
+        big_blind * 1.0
       )
 
     socket
@@ -698,7 +727,8 @@ defmodule ZoonkWeb.Live.Play do
     |> assign(:game_view, hide_bot_private_cards(view))
     |> assign(:tournament_dealer_idx, view.dealer_idx)
     |> assign(:tournament_stacks, view.player_stacks)
-    |> assign(:action_history, tournament_blind_history(socket.assigns.tournament_players, view, tournament))
+    |> assign(:tournament_blinds, {small_blind, big_blind})
+    |> assign(:action_history, tournament_blind_history(socket.assigns.tournament_players, view, small_blind, big_blind))
     |> assign(:history_street, "Preflop")
     |> assign(:hero_health_chips, view.hero_stack)
     |> assign(:bot_health_chips, view.bot_stack)
@@ -724,10 +754,23 @@ defmodule ZoonkWeb.Live.Play do
   end
 
   defp update_heads_up_totals(socket, view) do
+    {small_blind, big_blind} = socket.assigns.heads_up_blinds
+    hands_at_level = socket.assigns.hand_id - socket.assigns.heads_up_level_start_hand
+
+    socket =
+      if view.round == "Complete" and
+           BlindSchedule.advance_heads_up?(socket.assigns.heads_up_blind_level, hands_at_level) do
+        socket
+        |> update(:heads_up_blind_level, &(&1 + 1))
+        |> assign(:heads_up_level_start_hand, socket.assigns.hand_id)
+      else
+        socket
+      end
+
     case PokerHealth.settle(
            view,
-           socket.assigns.opponent.small_blind,
-           socket.assigns.opponent.big_blind
+           small_blind,
+           big_blind
          ) do
       {:settled, hero_chips, bot_chips, match_over} ->
         socket =
@@ -760,6 +803,12 @@ defmodule ZoonkWeb.Live.Play do
     hero_chips = Enum.at(view.player_stacks, 0, 0.0)
     alive = view.player_stacks |> Enum.with_index() |> Enum.filter(fn {stack, _idx} -> stack > 0 end)
 
+    completed_hand? = view.round == "Complete"
+    alive_count = length(alive)
+    eliminated? = completed_hand? and alive_count < socket.assigns.tournament_alive_count
+    hands_at_level = socket.assigns.hand_id - socket.assigns.tournament_level_start_hand
+    advance_blinds? = completed_hand? and BlindSchedule.advance_tournament?(socket.assigns.tournament_blind_level, hands_at_level, eliminated?)
+
     socket =
       socket
       |> assign(:tournament_stacks, view.player_stacks)
@@ -767,6 +816,21 @@ defmodule ZoonkWeb.Live.Play do
       |> assign(:bot_total_chips, alive |> Enum.map(&elem(&1, 0)) |> Enum.max(fn -> 0.0 end))
       |> assign(:hero_health_chips, hero_chips)
       |> assign(:bot_health_chips, alive |> Enum.map(&elem(&1, 0)) |> Enum.max(fn -> 0.0 end))
+
+    socket =
+      if completed_hand? do
+        socket = assign(socket, :tournament_alive_count, alive_count)
+
+        if advance_blinds? do
+          socket
+          |> update(:tournament_blind_level, &(&1 + 1))
+          |> assign(:tournament_level_start_hand, socket.assigns.hand_id)
+        else
+          socket
+        end
+      else
+        socket
+      end
 
     hero_eliminated? = hero_chips <= 0
     tournament_won? = length(alive) == 1 and elem(hd(alive), 1) == 0
@@ -854,21 +918,21 @@ defmodule ZoonkWeb.Live.Play do
 
   defp hand_message(view, _action, _socket), do: "Your turn on #{String.downcase(view.round)}."
 
-  defp blind_history(opponent, 0) do
+  defp blind_history(opponent, 0, small_blind, big_blind) do
     [
-      %{street: "Preflop", actor: "You", actor_index: 0, action: "blind", facing_bet?: false, text: "Puts #{opponent.small_blind} SB"},
-      %{street: "Preflop", actor: opponent.name, actor_index: 1, action: "blind", facing_bet?: false, text: "Puts #{opponent.big_blind} BB"}
+      %{street: "Preflop", actor: "You", actor_index: 0, action: "blind", facing_bet?: false, text: "Puts #{chip_text(small_blind)} SB"},
+      %{street: "Preflop", actor: opponent.name, actor_index: 1, action: "blind", facing_bet?: false, text: "Puts #{chip_text(big_blind)} BB"}
     ]
   end
 
-  defp blind_history(opponent, _dealer_idx) do
+  defp blind_history(opponent, _dealer_idx, small_blind, big_blind) do
     [
-      %{street: "Preflop", actor: opponent.name, actor_index: 1, action: "blind", facing_bet?: false, text: "Puts #{opponent.small_blind} SB"},
-      %{street: "Preflop", actor: "You", actor_index: 0, action: "blind", facing_bet?: false, text: "Puts #{opponent.big_blind} BB"}
+      %{street: "Preflop", actor: opponent.name, actor_index: 1, action: "blind", facing_bet?: false, text: "Puts #{chip_text(small_blind)} SB"},
+      %{street: "Preflop", actor: "You", actor_index: 0, action: "blind", facing_bet?: false, text: "Puts #{chip_text(big_blind)} BB"}
     ]
   end
 
-  defp tournament_blind_history(players, view, tournament) do
+  defp tournament_blind_history(players, view, small_blind, big_blind) do
     [
       %{
         street: "Preflop",
@@ -876,7 +940,7 @@ defmodule ZoonkWeb.Live.Play do
         actor_index: view.small_blind_idx,
         action: "blind",
         facing_bet?: false,
-        text: "Puts #{chip_text(tournament.small_blind)} SB"
+        text: "Puts #{chip_text(small_blind)} SB"
       },
       %{
         street: "Preflop",
@@ -884,7 +948,7 @@ defmodule ZoonkWeb.Live.Play do
         actor_index: view.big_blind_idx,
         action: "blind",
         facing_bet?: false,
-        text: "Puts #{chip_text(tournament.big_blind)} BB"
+        text: "Puts #{chip_text(big_blind)} BB"
       }
     ]
   end
